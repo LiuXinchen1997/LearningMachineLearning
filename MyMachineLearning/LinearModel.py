@@ -1,52 +1,14 @@
 #%%
-import xlrd
 import numpy as np
 from matplotlib import pyplot as plt
-
-
-#%%
-class LabeledDataset:
-    def __init__(self, data_address, datafile_type='xlsx'):
-        self.datafile_type = datafile_type
-        self.readbook = None
-
-        if datafile_type in ['xlsx']:
-            self.readbook = xlrd.open_workbook(data_address)
-
-    def get_data_by_sheet(self, index, mode='trans'):
-        """
-        :param index: index of sheet
-        :param normal:
-        :return: nsamples * nfeats
-        """
-        sheet = self.readbook.sheet_by_index(index)
-        nrows = sheet.nrows
-        ncols = sheet.ncols
-
-        data = np.zeros((nrows, ncols)).astype(np.float)
-        for i in range(nrows):
-            for j in range(ncols):
-                data[i, j] = sheet.cell(i, j).value
-
-        if mode == 'trans':
-            data = data.transpose()
-
-        return data
-
-    def get_feats_and_labels_by_sheet(self, index, mode='trans'):
-        data = self.get_data_by_sheet(index, mode)
-        nfeats = data.shape[1]
-        feats = data[:, :nfeats - 1]
-        labels = data[:, nfeats]
-
-        return feats, labels
+from MyMachineLearning.Dataset import LabeledDatasetFromFile
 
 
 #%%
 class LogisticRegression:
     def __init__(self, data_address, datafile_type='xlsx', sheet_index=0, mode='trans',
                  feat_inds=None, label_inds=None):
-        dataset = LabeledDataset(data_address, datafile_type)
+        dataset = LabeledDatasetFromFile(data_address, datafile_type)
         data = dataset.get_data_by_sheet(sheet_index, mode=mode)
 
         # 数据预处理
@@ -137,7 +99,7 @@ class LogisticRegression:
 class LinearDiscriminantAnalysis:
     def __init__(self, data_address, datafile_type='xlsx', sheet_index=0, mode='trans',
                  feat_inds=None, label_inds=None):
-        dataset = LabeledDataset(data_address, datafile_type)
+        dataset = LabeledDatasetFromFile(data_address, datafile_type)
         data = dataset.get_data_by_sheet(sheet_index, mode=mode)
 
         # 数据预处理
@@ -237,7 +199,11 @@ class LinearDiscriminantAnalysis:
         error = 1 - accuracy / self.__nsamples
         return error
 
+    # 此函数在功能上没有普适性，仅适用于西瓜数据集3.0
     def draw_figure(self):
+        if self.__X0.shape[1] != 2:
+            return -1
+
         if self.__omega is None:
             return -1
 
@@ -250,18 +216,20 @@ class LinearDiscriminantAnalysis:
         line_x, line_y = [0.1, 0.9], []
         for x in line_x:
             line_y.append(k * x)
+        plt.plot(line_x, line_y)
 
         # 绘制各个样本在LDA直线上的垂直投影
         for x in self.__X0:
             projected_x = (x[1] + x[0] / k) * (k / (k*k + 1))
             projected_y = projected_x * k
             plt.plot(projected_x, projected_y, '+r')
+            plt.plot([x[0], projected_x], [x[1], projected_y], color="red", linestyle="-.")
         for x in self.__X1:
             projected_x = (x[1] + x[0] / k) * (k / (k * k + 1))
             projected_y = projected_x * k
             plt.plot(projected_x, projected_y, '*g')
+            plt.plot([x[0], projected_x], [x[1], projected_y], color="green", linestyle=":")
 
-        plt.plot(line_x, line_y)
         plt.title('Linear Discrimenant Analysis')
         plt.xlabel('密度')
         plt.ylabel('含糖率')
@@ -282,5 +250,5 @@ if __name__ == '__main__':
     classifier2 = LinearDiscriminantAnalysis(data_address, feat_inds=[6,7], label_inds=[8])
     print(classifier2.get_labels())
     print(classifier2.train())
-    # classifier2.draw_figure()
-    print(classifier2.evaluate_result())
+    classifier2.draw_figure()
+    print(classifier2.evaluate_result())  # LDA需要应用于线性可分的样本，否则性能会很差
