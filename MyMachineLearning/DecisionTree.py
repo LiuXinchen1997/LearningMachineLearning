@@ -1,3 +1,11 @@
+"""
+待实现需求：
+1. 剪枝：预剪枝、后剪枝
+2. 连续属性处理 √
+3. 缺失值处理
+4. 使用pandas提升程序效率
+"""
+
 #%%
 import numpy as np
 from MyMachineLearning.Dataset import *
@@ -14,10 +22,20 @@ class DecisionTree:
         self.__nsamples, self.__nfeats = dataset.get_nsamples_and_nfeats()
         self.__columns = dataset.get_columns()
         self.__feats_values = dataset.get_feats_values()
-        self.__attr_is_seq = dataset.get_attr_is_seq()
+        self.__seq_attrs = dataset.get_seq_attrs()
+        self.__attrs_are_seq = DecisionTree.__get_attrs_are_seq(self.__nfeats, self.__seq_attrs)
         self.__tree = None
 
-        self.__IV = {}  # for C4.5
+    @staticmethod
+    def __get_attrs_are_seq(nfeats, seq_attrs):
+        attrs_are_seq = []
+        for i in range(nfeats):
+            if i in seq_attrs:
+                attrs_are_seq.append(True)
+            else:
+                attrs_are_seq.append(False)
+
+        return np.array(attrs_are_seq)
 
     @staticmethod
     def __samples_same_on_attrs(dataset, attrs):
@@ -73,7 +91,16 @@ class DecisionTree:
 
         return splits
 
+    @staticmethod
+    def __split_dataset_by_candidate_t(dataset, attr, candidate_t):
+        splits = []
+        splits.append(np.where(dataset[:, attr] >= candidate_t)[0].tolist())
+        splits.append(np.where(dataset[:, attr] < candidate_t)[0].tolist())
+
+        return splits
+
     def __calc_partition_attr_info_gain(self, dataset, attr):
+        # 只处理离散属性
         ent = self.__calc_dataset_info_entropy(dataset)
         ent2 = 0.0
         splits = self.__split_dataset_by_feat_values(dataset, attr, self.__feats_values[attr])
@@ -83,41 +110,91 @@ class DecisionTree:
 
         return gain
 
-    def __calc_attr_IV(self, dataset, attr):
+    def __calc_partition_seq_attr_info_gain(self, dataset, attr):
+        candidate_ts = self.__get_candidate_ts(dataset, attr)
+        max_gain = -np.inf
+        best_candidate_t = -1
+        for candidate_t in candidate_ts:
+            cur_gain = self.__calc_dataset_info_entropy(dataset)
+            splits = self.__split_dataset_by_candidate_t(dataset, attr, candidate_t)
+            for split in splits:
+                cur_gain = cur_gain - self.__calc_dataset_info_entropy(dataset[split, :])
+            if max_gain < cur_gain:
+                max_gain = cur_gain
+                best_candidate_t = candidate_t
+
+        return best_candidate_t, max_gain
+
+    def __calc_attr_iv(self, dataset, attr, candidate_t=None):
+        epsilon = 1e-6
         iv = 0.0
-        splits = self.__split_dataset_by_feat_values(dataset, attr, self.__feats_values[attr])
+        if self.__attrs_are_seq[attr] and candidate_t is not None:
+            splits = self.__split_dataset_by_candidate_t(dataset, attr, candidate_t)
+        else:
+            splits = self.__split_dataset_by_feat_values(dataset, attr, self.__feats_values[attr])
         for split in splits:
-            iv += -float(len(split)) / dataset.shape[0] * np.log2(float(len(split)) / dataset.shape[0])
+            iv += -float(len(split)) / dataset.shape[0] * np.log2(float(len(split)+epsilon) / dataset.shape[0])
+
         return iv
 
     def __calc_partition_attr_gain_ratio(self, dataset, attr):
         gain = self.__calc_partition_attr_info_gain(dataset, attr)
-        if attr not in self.__IV.keys():
-            self.__IV[attr] = self.__calc_attr_IV(dataset, attr)
+        iv = self.__calc_attr_iv(dataset, attr)
 
-        return gain / self.__IV[attr]
+        return gain / iv
 
-    def __choose_best_partition_attr_ID3(self, dataset, attrs):
+    def __calc_partition_seq_attr_gain_ratio(self, dataset, attr):
+        candidate_ts = self.__get_candidate_ts(dataset, attr)
+        max_gain_ratio = -np.inf
+        best_candidate_t = -1
+        for candidate_t in candidate_ts:
+            cur_gain = self.__calc_dataset_info_entropy(dataset)
+            splits = self.__split_dataset_by_candidate_t(dataset, attr, candidate_t)
+            for split in splits:
+                cur_gain = cur_gain - self.__calc_dataset_info_entropy(dataset[split, :])
+            cur_iv = self.__calc_attr_iv(dataset, attr, candidate_t=candidate_t)
+            cur_gain_ratio = cur_gain / cur_iv
+            if max_gain_ratio < cur_gain_ratio:
+                max_gain_ratio = cur_gain_ratio
+                best_candidate_t = candidate_t
+
+        return best_candidate_t, max_gain_ratio
+
+    def __choose_best_partition_attr_id3(self, dataset, attrs):
         max_ = -1
         best_attr = attrs[0]
         best_attr_ind = 0
+        best_candidate_t = -1
         for i in range(len(attrs)):
             attr = attrs[i]
-            cur_ = self.__calc_partition_attr_info_gain(dataset, attr)
+            t = -1
+            if self.__attrs_are_seq[attr]:
+                t, cur_ = self.__calc_partition_seq_attr_info_gain(dataset, attr)
+            else:
+                cur_ = self.__calc_partition_attr_info_gain(dataset, attr)
+
             if max_ < cur_:
                 max_ = cur_
                 best_attr = attr
                 best_attr_ind = i
+                if self.__attrs_are_seq[attr]:
+                    best_candidate_t = t
 
-        return best_attr, best_attr_ind
+        return best_attr, best_attr_ind, best_candidate_t
 
-    def __choose_best_partition_attr_C45(self, dataset, attrs):
+    def __choose_best_partition_attr_c45(self, dataset, attrs):
         max_ = -1
         best_attr = attrs[0]
         best_attr_ind = 0
         gain_ratios = np.zeros((len(attrs), 1), dtype=np.float)
+        best_candidate_t = -1
+        seq_attr2candidate_t = dict()
         for i in range(len(attrs)):
-            gain_ratios[i] = self.__calc_partition_attr_gain_ratio(dataset, attrs[i])
+            if self.__attrs_are_seq[attrs[i]]:
+                t, gain_ratios[i] = self.__calc_partition_seq_attr_gain_ratio(dataset, attrs[i])
+                seq_attr2candidate_t[attrs[i]] = t
+            else:
+                gain_ratios[i] = self.__calc_partition_attr_gain_ratio(dataset, attrs[i])
         mean_ = np.mean(gain_ratios)
         candidate_attrs = []
         for i in range(len(attrs)):
@@ -132,11 +209,13 @@ class DecisionTree:
                 max_ = cur_
                 best_attr = attr
                 best_attr_ind = i
+                if self.__attrs_are_seq[best_attr]:
+                    best_candidate_t = seq_attr2candidate_t[best_attr]
 
-        return best_attr, best_attr_ind
+        return best_attr, best_attr_ind, best_candidate_t
 
     @staticmethod
-    def __calc_Gini(dataset):
+    def __calc_gini(dataset):
         labels_count = DecisionTree.__calc_dataset_pk(dataset)
         gini = 1.0
         for key in labels_count.keys():
@@ -144,28 +223,73 @@ class DecisionTree:
 
         return gini
 
-    def __calc_Gini_index(self, dataset, attr):
+    def __calc_partition_attr_gini_index(self, dataset, attr):
         gini_index = 0.0
         splits = self.__split_dataset_by_feat_values(dataset, attr, self.__feats_values[attr])
         for split in splits:
-            gini_index = gini_index + len(split) / dataset.shape[0] * self.__calc_Gini(dataset[split, :])
+            gini_index = gini_index + len(split) / dataset.shape[0] * self.__calc_gini(dataset[split, :])
 
         return gini_index
+    
+    def __calc_partition_seq_attr_gini_index(self, dataset, attr):
+        candidate_ts = self.__get_candidate_ts(dataset, attr)
+        min_gini_index = np.inf
+        best_candidate_t = -1
+        for candidate_t in candidate_ts:
+            cur_gini_index = 0.0
+            splits = self.__split_dataset_by_candidate_t(dataset, attr, candidate_t)
+            for split in splits:
+                cur_gini_index = cur_gini_index + len(split) / dataset.shape[0] * self.__calc_gini(dataset[split, :])
+            if min_gini_index > cur_gini_index:
+                min_gini_index = cur_gini_index
+                best_candidate_t = candidate_t
 
-    def __choose_best_partition_attr_CART(self, dataset, attrs):
+        return best_candidate_t, min_gini_index
+
+    def __choose_best_partition_attr_cart(self, dataset, attrs):
         # 使用基尼指数选择划分属性
         min_ = np.Inf
         best_attr = 0
         best_attr_ind = 0
+        best_candidate_t = -1
         for i in range(len(attrs)):
             attr = attrs[i]
-            cur_ = self.__calc_Gini_index(dataset, attr)
+            t = -1
+            if self.__attrs_are_seq[attr]:
+                t, cur_ = self.__calc_partition_seq_attr_gini_index(dataset, attr)
+            else:
+                cur_ = self.__calc_partition_attr_gini_index(dataset, attr)
             if min_ > cur_:
                 min_ = cur_
                 best_attr = attr
                 best_attr_ind = i
+                if self.__attrs_are_seq[attr]:
+                    best_candidate_t = t
 
-        return best_attr, best_attr_ind
+        return best_attr, best_attr_ind, best_candidate_t
+
+    @staticmethod
+    def __get_candidate_ts(dataset, attr):
+        candidate_ts = []
+        feat_values = list(set(dataset[:, attr].tolist()))
+        sorted_feat_values = np.sort(feat_values)
+        for i in range(len(sorted_feat_values) - 1):
+            candidate_ts.append((sorted_feat_values[i] + sorted_feat_values[i+1]) / 2.0)
+
+        return candidate_ts
+
+    def __get_feats_and_labels(self):
+        return self.__feats, self.__labels
+
+    def __get_entire_dataset(self):
+        feats, labels = self.__get_feats_and_labels()
+        dataset = np.concatenate((feats, labels.reshape((self.__nsamples, 1))), 1)
+
+        return dataset
+
+    def __get_entire_attrs(self):
+        attrs = [i for i in range(self.__nfeats)]
+        return attrs
 
     def __generate_nodes(self, dataset, attrs, mode=1):
         labels = dataset[:, -1]
@@ -175,24 +299,38 @@ class DecisionTree:
             return self.__samples_on_most_labels(dataset)
 
         if mode == 1:
-            best_attr, best_attr_ind = self.__choose_best_partition_attr_ID3(dataset, attrs)
+            best_attr, best_attr_ind, best_candidate_t = self.__choose_best_partition_attr_id3(dataset, attrs)
         elif mode == 2:
-            best_attr, best_attr_ind = self.__choose_best_partition_attr_C45(dataset, attrs)
+            best_attr, best_attr_ind, best_candidate_t = self.__choose_best_partition_attr_c45(dataset, attrs)
         elif mode == 3:
-            best_attr, best_attr_ind = self.__choose_best_partition_attr_CART(dataset, attrs)
+            best_attr, best_attr_ind, best_candidate_t = self.__choose_best_partition_attr_cart(dataset, attrs)
         else:
-            return None
+            raise Exception
 
         nodes = {best_attr: {}}
-        splits = self.__split_dataset_by_feat_values(dataset, best_attr, self.__feats_values[best_attr])
+        if self.__attrs_are_seq[best_attr]:
+            splits = self.__split_dataset_by_candidate_t(dataset, best_attr, best_candidate_t)
+        else:
+            splits = self.__split_dataset_by_feat_values(dataset, best_attr, self.__feats_values[best_attr])
         for i in range(len(splits)):
             split = splits[i]
             if not split:
-                return self.__samples_on_most_labels(dataset)
+                if self.__attrs_are_seq[best_attr]:
+                    s = '>=' if 0 == i else '<'
+                    s += str(best_candidate_t)
+                    nodes[best_attr][s] = self.__samples_on_most_labels(dataset)
+                else:
+                    nodes[best_attr][self.__feats_values[best_attr][i]] = self.__samples_on_most_labels(dataset)
             else:
                 new_attrs = attrs.copy()
                 new_attrs.pop(best_attr_ind)
-                nodes[best_attr][self.__feats_values[best_attr][i]] = self.__generate_nodes(dataset[split, :], new_attrs)
+                if self.__attrs_are_seq[best_attr]:
+                    s = '>=' if 0 == i else '<'
+                    s += str(best_candidate_t)
+                    nodes[best_attr][s] = self.__generate_nodes(dataset[split, :], new_attrs)
+                else:
+                    nodes[best_attr][self.__feats_values[best_attr][i]] = \
+                        self.__generate_nodes(dataset[split, :], new_attrs)
 
         return nodes
 
@@ -201,10 +339,8 @@ class DecisionTree:
         :param mode: 选择最优划分属性的方式。1 for ID3, 2 for C4.5, 3 for CART
         :return:
         """
-        # 先暂不考虑连续属性，假定所有属性都是离散的！！！
-        # 暂定代码，后面会需要删除
-        attrs = [i for i in range(self.__nfeats) if i not in self.__attr_is_seq]
-        dataset = np.concatenate((self.__feats[:, attrs], self.__labels.reshape((self.__nsamples, 1))), 1)
+        dataset = self.__get_entire_dataset()
+        attrs = self.__get_entire_attrs()
 
         self.__tree = self.__generate_nodes(dataset, attrs, mode=mode)
 
@@ -212,11 +348,28 @@ class DecisionTree:
         return self.__tree
 
     @staticmethod
-    def __dfs_tree(tree, feat):
+    def __get_candidate_t_from_node(tree):
+        flag_s = list(tree.keys())[0]
+        if flag_s.startswith('>='):
+            flag_s = flag_s[2:]
+        else:
+            flag_s = flag_s[1:]
+
+        return float(flag_s)
+
+    def __dfs_tree(self, tree, feat):
         if type(tree).__name__ == 'dict':
             key = list(tree.keys())[0]
-            _tree = tree[key][feat[key]]
-            return DecisionTree.__dfs_tree(_tree, feat)
+
+            if self.__attrs_are_seq[int(key)]:
+                candidate_t = self.__get_candidate_t_from_node(tree[key])
+                if feat[key] >= candidate_t:
+                    _tree = tree[key]['>='+str(candidate_t)]
+                else:
+                    _tree = tree[key]['<'+str(candidate_t)]
+            else:
+                _tree = tree[key][feat[key]]
+            return self.__dfs_tree(_tree, feat)
         else:
             return tree
 
@@ -226,7 +379,7 @@ class DecisionTree:
         else:
             return self.__dfs_tree(self.__tree, feat)
 
-    def evaluate_result(self):
+    def evaluate_result_with_train_data(self):
         if self.__tree is None:
             return -1
         accuracy = 0
@@ -237,6 +390,23 @@ class DecisionTree:
         error = 1 - accuracy / self.__nsamples
         return error
 
+    def evaluate_result_with_new_data(self, feats, labels):
+        if self.__tree is None:
+            return -1
+        accuracy = 0
+        for feat, label in zip(feats, labels):
+            judge = self.pred(feat)
+            accuracy += (judge == label)
+
+        nsamples = feats.shape[0]
+        error = 1 - accuracy / nsamples
+        return error
+
+    def evaluate_result_with_new_data2(self, dataset):
+        feats = dataset[:, :-1]
+        labels = dataset[:, -1]
+        return self.evaluate_result_with_new_data(feats, labels)
+
 
 #%%
 if __name__ == '__main__':
@@ -244,7 +414,7 @@ if __name__ == '__main__':
     datasetff = LabeledDatasetFromFile(data_address)
     feats, labels = datasetff.get_feats_and_labels_by_sheet(0)
     dataset = LabeledDataset(feats, labels,
-                             columns=['色泽', '根蒂', '敲声', '纹理', '脐部', '触感', '密度', '含糖率'], attr_is_seq=[6, 7])
+                             columns=['色泽', '根蒂', '敲声', '纹理', '脐部', '触感', '密度', '含糖率'], seq_attrs={6, 7})
     # print(feats)
 
     tree = DecisionTree(dataset)
@@ -254,18 +424,18 @@ if __name__ == '__main__':
     tree.generate_tree(mode=1)
     nodes = tree.get_tree()
     print(nodes)
-    print(tree.evaluate_result())
+    print(tree.evaluate_result_with_train_data())
 
     # C4.5
     print('C4.5 algorithm')
     tree.generate_tree(mode=2)
     nodes = tree.get_tree()
     print(nodes)
-    print(tree.evaluate_result())
+    print(tree.evaluate_result_with_train_data())
 
     # CART
     print('CART algorithm')
     tree.generate_tree(mode=3)
     nodes = tree.get_tree()
     print(nodes)
-    print(tree.evaluate_result())
+    print(tree.evaluate_result_with_train_data())

@@ -6,18 +6,27 @@ import numpy as np
 #%%
 # 仅使用numpy
 class LabeledDataset:
-    def __init__(self, feats, labels, columns=None, feats_values=None, attr_is_seq=[]):
-        """
-        :param prob_is_seq: 表示连续属性的编号
-        """
+    def __init__(self, feats, labels, columns=None, feats_values=None, seq_attrs=set()):
         self.__feats = feats
         self.__labels = labels
         self.__columns = columns  # 用于存储各列属性的名字（字符串）
-        self.__attr_is_seq = attr_is_seq
+        self.__seq_attrs = seq_attrs
+        if not seq_attrs:  # 用于自动检测出连续属性
+            self.__seq_attrs = LabeledDataset.__generate_seq_attrs(self.__feats)
 
         self.__feats_values = feats_values
         if self.__feats_values is None:
             self.__feats_values = self.__get_feats_values(self.__feats)
+
+    @staticmethod
+    def __generate_seq_attrs(feats):
+        seq_attrs = set()
+        nfeats = feats.shape[1]
+        for i in range(nfeats):
+            if len(set(feats[:, i])) > nfeats * 0.5:
+                seq_attrs.add(i)
+
+        return seq_attrs
 
     @staticmethod
     def __get_feats_values(feats):
@@ -43,8 +52,8 @@ class LabeledDataset:
     def get_feats_values(self):
         return self.__feats_values
 
-    def get_attr_is_seq(self):
-        return self.__attr_is_seq
+    def get_seq_attrs(self):
+        return self.__seq_attrs
 
 
 class LabeledDatasetFromFile:

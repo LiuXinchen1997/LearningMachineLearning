@@ -2,12 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7b21e571-936a-4722-b191-390eb7ae0644" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/MyMachineLearning/Dataset.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/MyMachineLearning/DecisionTree.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/MyMachineLearning/demo.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataset/data3.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MyMachineLearning/LinearModel.py" beforeDir="false" afterPath="$PROJECT_DIR$/MyMachineLearning/LinearModel.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyMachineLearning/Dataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/MyMachineLearning/Dataset.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyMachineLearning/DecisionTree.py" beforeDir="false" afterPath="$PROJECT_DIR$/MyMachineLearning/DecisionTree.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -30,61 +26,7 @@
     <select />
   </component>
   <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/MyMachineLearning/DecisionTree.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="330">
-              <caret line="45" column="17" lean-forward="true" selection-start-line="45" selection-start-column="17" selection-end-line="45" selection-end-column="17" />
-              <folding>
-                <element signature="e#4#22#0" expanded="true" />
-                <element signature="e#130#590#0" />
-                <element signature="e#624#789#0" />
-                <element signature="e#860#1318#0" />
-                <element signature="e#1422#1684#0" />
-                <element signature="e#1392#1780#0" />
-                <element signature="e#1876#2029#0" />
-                <element signature="e#2879#3226#0" />
-                <element signature="e#2540#2794#0" />
-                <element signature="e#2867#3074#0" />
-                <element signature="e#3144#3521#0" />
-                <element signature="e#3581#4390#0" />
-                <element signature="e#4578#4780#0" />
-                <element signature="e#4839#5120#0" />
-                <element signature="e#5187#5564#0" />
-                <element signature="e#2854#3724#0" />
-                <element signature="e#3780#4078#0" />
-                <element signature="e#4150#4357#0" />
-                <element signature="e#4393#4506#0" />
-                <element signature="e#4547#4820#0" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/MyMachineLearning/LinearModel.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="978">
-              <caret line="84" column="16" selection-start-line="84" selection-start-column="16" selection-end-line="84" selection-end-column="16" />
-              <folding>
-                <element signature="e#4#22#0" expanded="true" />
-                <element signature="e#3120#7628#0" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/MyMachineLearning/demo.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2024">
-              <caret line="94" selection-start-line="94" selection-end-line="94" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -110,6 +52,10 @@
       <find>split</find>
       <find>mode</find>
       <find>log</find>
+      <find>attr_is_seq</find>
+      <find>T</find>
+      <find>seq_attrs</find>
+      <find>__calc_partition_seq_attr_gain_ratio</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -128,7 +74,7 @@
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="7">
+  <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="10" />
     <option name="y" value="20" />
     <option name="width" value="1346" />
@@ -142,7 +88,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -153,12 +98,18 @@
             <path>
               <item name="LearningMachineLearning" type="b2602c69:ProjectViewProjectNode" />
               <item name="LearningMachineLearning" type="462c0819:PsiDirectoryNode" />
+              <item name="dataset" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="LearningMachineLearning" type="b2602c69:ProjectViewProjectNode" />
+              <item name="LearningMachineLearning" type="462c0819:PsiDirectoryNode" />
               <item name="MyMachineLearning" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -325,7 +276,7 @@
       <workItem from="1560996603293" duration="945000" />
       <workItem from="1561086023062" duration="21608000" />
       <workItem from="1561852506815" duration="677000" />
-      <workItem from="1562315398861" duration="9632000" />
+      <workItem from="1562315398861" duration="35463000" />
     </task>
     <servers />
   </component>
@@ -344,7 +295,7 @@
     </history-entry>
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="97288000" />
+    <option name="totallyTimeSpent" value="123119000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -356,16 +307,15 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1382" height="744" extended-state="7" />
-    <editor active="true" />
+    <frame x="-8" y="-8" width="1382" height="744" extended-state="6" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" weight="0.18305598" />
+      <window_info content_ui="combo" id="Project" order="0" weight="0.14372164" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.3295082" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.6147541" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.4737705" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.26065573" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.3295082" />
@@ -394,6 +344,16 @@
           <line>94</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/MyMachineLearning/DecisionTree.py</url>
+          <line>423</line>
+          <option name="timeStamp" value="20" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/MyMachineLearning/DecisionTree.py</url>
+          <line>325</line>
+          <option name="timeStamp" value="22" />
+        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
@@ -401,7 +361,7 @@
     <SUITE FILE_PATH="coverage/LearningMachineLearning$pytest_in_demo_py.coverage" NAME="pytest in demo.py Coverage Results" MODIFIED="1560239366267" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/MyMachineLearning" />
     <SUITE FILE_PATH="coverage/LearningMachineLearning$demo.coverage" NAME="demo Coverage Results" MODIFIED="1561217212849" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/MyMachineLearning" />
     <SUITE FILE_PATH="coverage/LearningMachineLearning$LinearModel.coverage" NAME="LinearModel Coverage Results" MODIFIED="1559638407043" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/MyMachineLearning" />
-    <SUITE FILE_PATH="coverage/LearningMachineLearning$DecisionTree.coverage" NAME="DecisionTree Coverage Results" MODIFIED="1561616183827" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/MyMachineLearning" />
+    <SUITE FILE_PATH="coverage/LearningMachineLearning$DecisionTree.coverage" NAME="DecisionTree Coverage Results" MODIFIED="1562415184154" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/MyMachineLearning" />
   </component>
   <component name="debuggerHistoryManager">
     <expressions id="evaluateExpression">
@@ -497,26 +457,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/MyMachineLearning/demo.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2024">
-          <caret line="94" selection-start-line="94" selection-end-line="94" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/MyMachineLearning/Dataset.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="516">
-          <caret line="42" column="8" selection-start-line="42" selection-start-column="8" selection-end-line="42" selection-end-column="8" />
-          <folding>
-            <element signature="e#4#15#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/MyMachineLearning/LinearModel.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="978">
+        <state relative-caret-position="1848">
           <caret line="84" column="16" selection-start-line="84" selection-start-column="16" selection-end-line="84" selection-end-column="16" />
           <folding>
             <element signature="e#4#22#0" expanded="true" />
@@ -527,30 +470,53 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/MyMachineLearning/DecisionTree.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="330">
-          <caret line="45" column="17" lean-forward="true" selection-start-line="45" selection-start-column="17" selection-end-line="45" selection-end-column="17" />
+        <state relative-caret-position="110">
+          <caret line="5" column="13" lean-forward="true" selection-start-line="5" selection-start-column="13" selection-end-line="5" selection-end-column="13" />
           <folding>
             <element signature="e#4#22#0" expanded="true" />
-            <element signature="e#130#590#0" />
+            <element signature="e#751#972#0" />
             <element signature="e#624#789#0" />
             <element signature="e#860#1318#0" />
-            <element signature="e#1422#1684#0" />
             <element signature="e#1392#1780#0" />
             <element signature="e#1876#2029#0" />
-            <element signature="e#2879#3226#0" />
-            <element signature="e#2540#2794#0" />
-            <element signature="e#2867#3074#0" />
-            <element signature="e#3144#3521#0" />
-            <element signature="e#3581#4390#0" />
+            <element signature="e#2777#2964#0" />
+            <element signature="e#2646#2994#0" />
+            <element signature="e#3061#3656#0" />
+            <element signature="e#4119#4374#0" />
+            <element signature="e#4489#4621#0" />
+            <element signature="e#4965#5631#0" />
+            <element signature="e#6400#7611#0" />
             <element signature="e#4578#4780#0" />
             <element signature="e#4839#5120#0" />
-            <element signature="e#5187#5564#0" />
-            <element signature="e#2854#3724#0" />
-            <element signature="e#3780#4078#0" />
+            <element signature="e#8303#8928#0" />
+            <element signature="e#5906#6203#0" />
+            <element signature="e#7131#7165#0" />
+            <element signature="e#7211#7361#0" />
+            <element signature="e#7405#7467#0" />
+            <element signature="e#10428#10603#0" />
             <element signature="e#4150#4357#0" />
             <element signature="e#4393#4506#0" />
-            <element signature="e#4547#4820#0" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/MyMachineLearning/Dataset.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="132">
+          <caret line="7" column="21" selection-start-line="7" selection-start-column="21" selection-end-line="7" selection-end-column="21" />
+          <folding>
+            <element signature="e#4#15#0" expanded="true" />
+            <element signature="e#37#40#0" />
+            <element signature="e#78#1211#0" />
+            <element signature="e#1258#2282#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/MyMachineLearning/demo.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1704">
+          <caret line="94" selection-start-line="94" selection-end-line="94" />
         </state>
       </provider>
     </entry>
