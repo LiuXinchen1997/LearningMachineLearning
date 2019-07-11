@@ -1,9 +1,46 @@
 #%%
 import xlrd
 import numpy as np
-
+import utils.CONSTANT
 
 #%%
+class LabeledDatasetFromFile:
+    def __init__(self, data_address, datafile_type='xlsx'):
+        self.datafile_type = datafile_type
+        self.readbook = None
+
+        if datafile_type in ['xlsx', 'xls']:
+            self.readbook = xlrd.open_workbook(data_address)
+
+    def get_data_by_sheet(self, index, mode=''):
+        """
+        :param index: index of sheet
+        :param normal:
+        :return: nsamples * nfeats
+        """
+        sheet = self.readbook.sheet_by_index(index)
+        nrows = sheet.nrows
+        ncols = sheet.ncols
+
+        data = np.zeros((nrows, ncols)).astype(np.float)
+        for i in range(nrows):
+            for j in range(ncols):
+                data[i, j] = sheet.cell(i, j).value
+
+        if mode == utils.CONSTANT.TRANS:
+            data = data.transpose()
+
+        return data
+
+    def get_feats_and_labels_by_sheet(self, index, mode=''):
+        data = self.get_data_by_sheet(index, mode)
+        nfeats = data.shape[1]
+        feats = data[:, :nfeats - 1]
+        labels = data[:, nfeats - 1]
+
+        return feats, labels
+
+
 # 仅使用numpy
 class LabeledDataset:
     def __init__(self, feats, labels, columns=None, feats_values=None, seq_attrs=set()):
@@ -56,41 +93,27 @@ class LabeledDataset:
         return self.__seq_attrs
 
 
-class LabeledDatasetFromFile:
-    def __init__(self, data_address, datafile_type='xlsx'):
-        self.datafile_type = datafile_type
-        self.readbook = None
+class LabeledTrainAndTestDataset:
+    def __init__(self, train_data, test_data=None, test_ratio=0.4):
+        nsamples = train_data.shape[0]
+        if test_data is None:
+            indces = [i for i in range(nsamples)]
+            np.random.shuffle(indces)
+            test_data = train_data[indces[:int(nsamples * test_ratio)], :]
+            train_data = train_data[indces[int(nsamples * test_ratio):], :]
+        self.__train_data = train_data
+        self.__test_data = test_data
 
-        if datafile_type in ['xlsx']:
-            self.readbook = xlrd.open_workbook(data_address)
+    def get_train_data(self):
+        return self.__train_data
 
-    def get_data_by_sheet(self, index, mode='trans'):
-        """
-        :param index: index of sheet
-        :param normal:
-        :return: nsamples * nfeats
-        """
-        sheet = self.readbook.sheet_by_index(index)
-        nrows = sheet.nrows
-        ncols = sheet.ncols
+    def get_train_feats_and_labels(self):
+        return self.__train_data[:, :-1], self.__train_data[:, -1]
 
-        data = np.zeros((nrows, ncols)).astype(np.float)
-        for i in range(nrows):
-            for j in range(ncols):
-                data[i, j] = sheet.cell(i, j).value
+    def get_test_data(self):
+        return self.__test_data
 
-        if mode == 'trans':
-            data = data.transpose()
-
-        return data
-
-    def get_feats_and_labels_by_sheet(self, index, mode='trans'):
-        data = self.get_data_by_sheet(index, mode)
-        nfeats = data.shape[1]
-        feats = data[:, :nfeats - 1]
-        labels = data[:, nfeats - 1]
-
-        return feats, labels
-
+    def get_test_feats_and_labels(self):
+        return self.__test_data[:, :-1], self.__test_data[:, -1]
 
 # 待开发，使用pandas改写！

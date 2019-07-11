@@ -3,10 +3,12 @@ import numpy as np
 from matplotlib import pyplot as plt
 from MyMachineLearning.Dataset import LabeledDatasetFromFile
 
+import utils.CONSTANT
+
 
 #%%
 class LogisticRegression:
-    def __init__(self, data_address, datafile_type='xlsx', sheet_index=0, mode='trans',
+    def __init__(self, data_address, datafile_type='xlsx', sheet_index=0, mode=utils.CONSTANT.TRANS,
                  feat_inds=None, label_inds=None):
         dataset = LabeledDatasetFromFile(data_address, datafile_type)
         data = dataset.get_data_by_sheet(sheet_index, mode=mode)
@@ -97,7 +99,7 @@ class LogisticRegression:
 
 
 class LinearDiscriminantAnalysis:
-    def __init__(self, data_address, datafile_type='xlsx', sheet_index=0, mode='trans',
+    def __init__(self, data_address, datafile_type='xlsx', sheet_index=0, mode=utils.CONSTANT.TRANS,
                  feat_inds=None, label_inds=None):
         dataset = LabeledDatasetFromFile(data_address, datafile_type)
         data = dataset.get_data_by_sheet(sheet_index, mode=mode)
@@ -239,7 +241,7 @@ class LinearDiscriminantAnalysis:
 #%%
 if __name__ == '__main__':
     # 对数几率回归
-    data_address = r'F:/工作/GitHub/LearningMachineLearning/dataset/watermelon3.xlsx'
+    data_address = r'D:\Project\Github\LearningMachineLearning\dataset\watermelon3.xlsx'
     classifier = LogisticRegression(data_address, feat_inds=[6, 7], label_inds=[8])
     classifier.train()
     error = classifier.evaluate_result()
