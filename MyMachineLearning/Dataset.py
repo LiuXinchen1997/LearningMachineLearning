@@ -1,6 +1,8 @@
 #%%
 import xlrd
 import numpy as np
+from matplotlib import pyplot as plt
+
 import utils.CONSTANT
 
 #%%
@@ -115,5 +117,15 @@ class LabeledTrainAndTestDataset:
 
     def get_test_feats_and_labels(self):
         return self.__test_data[:, :-1], self.__test_data[:, -1]
+
+    @staticmethod
+    def visual_data(data):
+        for sample in data:
+            if sample[-1] == 1:
+                plt.plot(sample[0], sample[1], '+r')
+            else:
+                plt.plot(sample[0], sample[1], '*g')
+
+        plt.show()
 
 # 待开发，使用pandas改写！

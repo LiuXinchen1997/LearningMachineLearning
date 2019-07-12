@@ -1,1 +1,2 @@
 TRANS = 'trans'
+DEFAULT_ZERO_PRECISION = 1e-5
