@@ -97,8 +97,8 @@ class LabeledDataset:
 
 class LabeledTrainAndTestDataset:
     def __init__(self, train_data, test_data=None, test_ratio=0.4):
-        nsamples = train_data.shape[0]
         if test_data is None:
+            nsamples = train_data.shape[0]
             indces = [i for i in range(nsamples)]
             np.random.shuffle(indces)
             test_data = train_data[indces[:int(nsamples * test_ratio)], :]
@@ -120,6 +120,9 @@ class LabeledTrainAndTestDataset:
 
     @staticmethod
     def visual_data(data):
+        if data.shape[1] - 1 != 2:  # 特征必须是二维才能可视化！
+            return
+
         for sample in data:
             if sample[-1] == 1:
                 plt.plot(sample[0], sample[1], '+r')
