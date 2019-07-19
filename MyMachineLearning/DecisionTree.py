@@ -1,11 +1,3 @@
-"""
-待实现需求：
-1. 剪枝：预剪枝、后剪枝
-2. 连续属性处理 √
-3. 缺失值处理
-4. 使用pandas提升程序效率
-"""
-
 #%%
 import numpy as np
 from MyMachineLearning.Dataset import *

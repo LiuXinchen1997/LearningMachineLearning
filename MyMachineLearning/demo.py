@@ -1,276 +1,214 @@
-#################################################
-# SVM: support vector machine
-# Author : zouxy
-# Date   : 2013-12-12
-# HomePage : http://blog.csdn.net/zouxy09
-# Email  : zouxy09@qq.com
-#################################################
+#-*- coding=utf-8 -*-
+import random
 
 from numpy import *
-import time
-import matplotlib.pyplot as plt
+
+# 将文本中的样本数据添加到列表中
+def loadDataSet(fileName):
+    dataMat = []
+    labelMat = []
+    fr = open(fileName)
+    for line in fr.readlines(): # 对文本按行遍历
+        lineArr = line.strip().split('    ')
+        dataMat.append([float(lineArr[0]), float(lineArr[1])])   # 每行前两个是属性数据，最后一个是类标号
+        labelMat.append(float(lineArr[2]))
+    return dataMat, labelMat
+
+# 随机选取对偶因子alpha ,参数i 是alpha 的下标，m 是alpha 的总数
+def selectJrand(i,m):
+    j = i
+    while (j==i):
+        j = int(random.uniform(0,m))
+    return j
+
+# 对所求的对偶因子按约束条件的修剪
+def clipAlpha(aj, H, L): # H 为上界，L为下界
+    if aj > H:
+        aj = H
+    if L > aj:
+        aj = L
+    return aj
 
 
-# calulate kernel value
-def calcKernelValue(matrix_x, sample_x, kernelOption):
-    kernelType = kernelOption[0]
-    numSamples = matrix_x.shape[0]
-    kernelValue = mat(zeros((numSamples, 1)))
-
-    if kernelType == 'linear':
-        kernelValue = matrix_x * sample_x.T
-    elif kernelType == 'rbf':
-        sigma = kernelOption[1]
-        if sigma == 0:
-            sigma = 1.0
-        for i in range(numSamples):
-            diff = matrix_x[i, :] - sample_x
-            kernelValue[i] = exp(diff * diff.T / (-2.0 * sigma ** 2))
-    else:
-        raise NameError('Not support kernel type! You can use linear or rbf!')
-    return kernelValue
+class optStruct:
+    def __init__(self,dataMatIn, classLabels, C, toler, kTup):
+        self.X = dataMatIn # 样本数据
+        self.labelMat = classLabels # 样本的类标号
+        self.C = C # 对偶因子的上界值
+        self.tol = toler
+        self.m = shape(dataMatIn)[0] # 样本的行数，即样本对象的个数
+        self.alphas = mat(zeros((self.m, 1))) # 对偶因子
+        self.b = 0 # 分割函数的截距
+        self.eCache = mat(zeros((self.m, 2))) # 差值矩阵 m * 2，第一列是对象的标志位 1 表示存在不为零的差值 0 表示差值为零，第二列是实际的差值 E
+        self.K = mat(zeros((self.m, self.m))) # 对象经过核函数映射之后的值
+        for i in range(self.m): # 遍历全部样本集
+            self.K[:,i] = kernelTrans(self.X, self.X[i,:], kTup ) # 调用径向基核函数
 
 
-# calculate kernel matrix given train set and kernel type
-def calcKernelMatrix(train_x, kernelOption):
-    numSamples = train_x.shape[0]
-    kernelMatrix = mat(zeros((numSamples, numSamples)))
-    for i in range(numSamples):
-        kernelMatrix[:, i] = calcKernelValue(train_x, train_x[i, :], kernelOption)
-    return kernelMatrix
+
+# 预测的类标号值与真实值的差值，参数 oS 是类对象，k 是样本的对象的标号
+def calcEk(oS, k):
+    fXk = float(multiply(oS.alphas, oS.labelMat).T * oS.K[:, k] + oS.b)  # 公式（1）
+    Ek = fXk - float(oS.labelMat[k]) # 差值
+    return Ek
 
 
-# define a struct just for storing variables and data
-class SVMStruct:
-    def __init__(self, dataSet, labels, C, toler, kernelOption):
-        self.train_x = dataSet  # each row stands for a sample
-        self.train_y = labels  # corresponding label
-        self.C = C  # slack variable
-        self.toler = toler  # termination condition for iteration
-        self.numSamples = dataSet.shape[0]  # number of samples
-        self.alphas = mat(zeros((self.numSamples, 1)))  # Lagrange factors for all samples
-        self.b = 0
-        self.errorCache = mat(zeros((self.numSamples, 2)))
-        self.kernelOpt = kernelOption
-        self.kernelMat = calcKernelMatrix(self.train_x, self.kernelOpt)
+# 由启发式选取第二个 alpha，以最大步长为标准
+def selectJ(i, oS, Ei): # 函数的参数是选取的第一个 alpha 的对象号、类对象和对象差值
+    maxK = -1; maxDeltaE = 0; Ej = 0 # 第二个 alpha 的初始化
+    oS.eCache[i] = [1,Ei] # 更新差值矩阵的第 i 行
+    validEcacheList = nonzero(oS.eCache[:,0].A)[0] # 取差值矩阵中第一列不为 0 的所有行数（标志位为 1 ），以元组类型返回
+    if (len(validEcacheList)) > 1 : #
+        for k in validEcacheList : # 遍历所有标志位为 1 的对象的差值
+            if k == i: continue
+            Ek = calcEk(oS, k) # 计算对象 k 的差值
+            deltaE = abs(Ei - Ek) # 取两个差值之差的绝对值
+            if (deltaE > maxDeltaE): # 选取最大的绝对值deltaE
+                maxK = k; maxDeltaE = deltaE; Ej = Ek
+        return maxK, Ej # 返回选取的第二个 alpha
+    else: # 随机选取第二个 alpha
+        j = selectJrand(i, oS.m)
+        Ej = calcEk(oS,j)
+    return j, Ej # 返回选取的第二个 alpha
+
+# 更新差值矩阵的数据
+def updateEk(oS, k):
+    Ek = calcEk(oS, k) # 调用计算差值的函数
+    oS.eCache [k] = [1,Ek]
 
 
-# calculate the error for alpha k
-def calcError(svm, alpha_k):
-    output_k = float(multiply(svm.alphas, svm.train_y).T * svm.kernelMat[:, alpha_k] + svm.b)
-    error_k = output_k - float(svm.train_y[alpha_k])
-    return error_k
+# 优化选取两个 alpha ，并计算截距 b
+def innerL(i, oS):
+    Ei = calcEk(oS, i) # 计算 对象 i 的差值
+    # 第一个 alpha 符合选择条件进入优化
+    if ((oS.labelMat [i]*Ei <- oS.tol) and (oS.alphas[i] < oS.C)) or ((oS.labelMat [i]*Ei > oS.tol) and (oS.alphas[i] > 0)):
+        j,Ej =selectJ(i, oS, Ei) # 选择第二个 alpha
+        alphaIold = oS.alphas[i].copy() # 浅拷贝
+        alphaJold = oS.alphas[j].copy() # 浅拷贝
 
+        # 根据对象 i 、j 的类标号（相等或不等）确定KKT条件的上界和下界
+        if (oS.labelMat[i] != oS.labelMat[j]):
+            L = max(0, oS.alphas [j] - oS.alphas[i])
+            H = min(oS.C, oS.C + oS.alphas[j] - oS.alphas[i])
+        else :
+            L = max(0, oS.alphas[j] + oS.alphas [i] - oS.C)
+            H = min(oS.C, oS.alphas [j] + oS.alphas [i])
 
-# update the error cache for alpha k after optimize alpha k
-def updateError(svm, alpha_k):
-    error = calcError(svm, alpha_k)
-    svm.errorCache[alpha_k] = [1, error]
-
-
-# select alpha j which has the biggest step
-def selectAlpha_j(svm, alpha_i, error_i):
-    svm.errorCache[alpha_i] = [1, error_i]  # mark as valid(has been optimized)
-    candidateAlphaList = nonzero(svm.errorCache[:, 0].A)[0]  # mat.A return array
-    maxStep = 0
-    alpha_j = 0
-    error_j = 0
-
-    # find the alpha with max iterative step
-    if len(candidateAlphaList) > 1:
-        for alpha_k in candidateAlphaList:
-            if alpha_k == alpha_i:
-                continue
-            error_k = calcError(svm, alpha_k)
-            if abs(error_k - error_i) > maxStep:
-                maxStep = abs(error_k - error_i)
-                alpha_j = alpha_k
-                error_j = error_k
-    # if came in this loop first time, we select alpha j randomly
-    else:
-        alpha_j = alpha_i
-        while alpha_j == alpha_i:
-            alpha_j = int(random.uniform(0, svm.numSamples))
-        error_j = calcError(svm, alpha_j)
-
-    return alpha_j, error_j
-
-
-# the inner loop for optimizing alpha i and alpha j
-def innerLoop(svm, alpha_i):
-    error_i = calcError(svm, alpha_i)
-
-    ### check and pick up the alpha who violates the KKT condition
-    ## satisfy KKT condition
-    # 1) yi*f(i) >= 1 and alpha == 0 (outside the boundary)
-    # 2) yi*f(i) == 1 and 0<alpha< C (on the boundary)
-    # 3) yi*f(i) <= 1 and alpha == C (between the boundary)
-    ## violate KKT condition
-    # because y[i]*E_i = y[i]*f(i) - y[i]^2 = y[i]*f(i) - 1, so
-    # 1) if y[i]*E_i < 0, so yi*f(i) < 1, if alpha < C, violate!(alpha = C will be correct)
-    # 2) if y[i]*E_i > 0, so yi*f(i) > 1, if alpha > 0, violate!(alpha = 0 will be correct)
-    # 3) if y[i]*E_i = 0, so yi*f(i) = 1, it is on the boundary, needless optimized
-    if (svm.train_y[alpha_i] * error_i < -svm.toler) and (svm.alphas[alpha_i] < svm.C) or \
-            (svm.train_y[alpha_i] * error_i > svm.toler) and (svm.alphas[alpha_i] > 0):
-
-        # step 1: select alpha j
-        alpha_j, error_j = selectAlpha_j(svm, alpha_i, error_i)
-        alpha_i_old = svm.alphas[alpha_i].copy()
-        alpha_j_old = svm.alphas[alpha_j].copy()
-
-        # step 2: calculate the boundary L and H for alpha j
-        if svm.train_y[alpha_i] != svm.train_y[alpha_j]:
-            L = max(0, svm.alphas[alpha_j] - svm.alphas[alpha_i])
-            H = min(svm.C, svm.C + svm.alphas[alpha_j] - svm.alphas[alpha_i])
-        else:
-            L = max(0, svm.alphas[alpha_j] + svm.alphas[alpha_i] - svm.C)
-            H = min(svm.C, svm.alphas[alpha_j] + svm.alphas[alpha_i])
-        if L == H:
-            return 0
-
-        # step 3: calculate eta (the similarity of sample i and j)
-        eta = 2.0 * svm.kernelMat[alpha_i, alpha_j] - svm.kernelMat[alpha_i, alpha_i] \
-              - svm.kernelMat[alpha_j, alpha_j]
+        if L==H:
+            print("L==H")
+            return 0 # 不符合优化条件（第二个 alpha）
+        eta = 2.0 * oS.K[i,j] - oS.K[i,i] - oS.K[j,j]  # 计算公式的eta ,是公式的相反数
         if eta >= 0:
+            print("eta>=0")
+            return 0 # 不考虑eta 大于等于 0 的情况（这种情况对 alpha 的解是另外一种方式，即临界情况的求解）
+        # 优化之后的第二个 alpha 值
+        oS.alphas[j] -= oS.labelMat[j]*(Ei - Ej)/eta
+        oS.alphas[j] = clipAlpha(oS.alphas[j], H, L)
+        updateEk(oS, j) # 更新差值矩阵
+        if (abs(oS.alphas[j] - alphaJold) < 0.00001): # 优化之后的 alpha 值与之前的值改变量太小，步长不足
+            print("j not moving enough")
             return 0
-
-        # step 4: update alpha j
-        svm.alphas[alpha_j] -= svm.train_y[alpha_j] * (error_i - error_j) / eta
-
-        # step 5: clip alpha j
-        if svm.alphas[alpha_j] > H:
-            svm.alphas[alpha_j] = H
-        if svm.alphas[alpha_j] < L:
-            svm.alphas[alpha_j] = L
-
-        # step 6: if alpha j not moving enough, just return
-        if abs(alpha_j_old - svm.alphas[alpha_j]) < 0.00001:
-            updateError(svm, alpha_j)
-            return 0
-
-        # step 7: update alpha i after optimizing aipha j
-        svm.alphas[alpha_i] += svm.train_y[alpha_i] * svm.train_y[alpha_j] \
-                               * (alpha_j_old - svm.alphas[alpha_j])
-
-        # step 8: update threshold b
-        b1 = svm.b - error_i - svm.train_y[alpha_i] * (svm.alphas[alpha_i] - alpha_i_old) \
-             * svm.kernelMat[alpha_i, alpha_i] \
-             - svm.train_y[alpha_j] * (svm.alphas[alpha_j] - alpha_j_old) \
-             * svm.kernelMat[alpha_i, alpha_j]
-        b2 = svm.b - error_j - svm.train_y[alpha_i] * (svm.alphas[alpha_i] - alpha_i_old) \
-             * svm.kernelMat[alpha_i, alpha_j] \
-             - svm.train_y[alpha_j] * (svm.alphas[alpha_j] - alpha_j_old) \
-             * svm.kernelMat[alpha_j, alpha_j]
-        if (0 < svm.alphas[alpha_i]) and (svm.alphas[alpha_i] < svm.C):
-            svm.b = b1
-        elif (0 < svm.alphas[alpha_j]) and (svm.alphas[alpha_j] < svm.C):
-            svm.b = b2
-        else:
-            svm.b = (b1 + b2) / 2.0
-
-        # step 9: update error cache for alpha i, j after optimize alpha i, j and b
-        updateError(svm, alpha_j)
-        updateError(svm, alpha_i)
-
-        return 1
-    else:
+        oS.alphas[i] += oS.labelMat[j]*oS.labelMat[i]*(alphaJold - oS.alphas[j]) # 优化第二个 alpha
+        updateEk(oS, i) # 更新差值矩阵
+        # 计算截距 b
+        b1 = oS.b - Ei - oS.labelMat[i] * (oS.alphas[i] - alphaIold) * oS.K[i, i] - oS.labelMat[j] * (oS.alphas[j] - alphaJold) * oS.K[i, j]
+        b2 = oS.b - Ej - oS.labelMat[i] * (oS.alphas[i] - alphaIold) * oS.K[i, j] - oS.labelMat[j] * (oS.alphas[j] - alphaJold) * oS.K[j, j]
+        if (0 < oS.alphas [i]) and (oS.C > oS.alphas[i]):
+            oS.b = b1
+        elif (0 < oS.alphas [j]) and (oS.C > oS.alphas [j]):
+            oS.b = b2
+        else :
+            oS.b = (b1 + b2)/2.0
+        return 1 # 进行一次优化
+    else :
         return 0
 
 
-# the main training procedure
-def trainSVM(train_x, train_y, C, toler, maxIter, kernelOption=('rbf', 1.0)):
-    # calculate training time
-    startTime = time.time()
+# 遍历所有能优化的 alpha
+def smoP(dataMatIn, classLabels, C, toler, maxIter, kTup=('lin', 0)):
+    oS = optStruct(mat(dataMatIn), mat(classLabels).transpose(), C, toler, kTup) # 创建一个类对象 oS ,类对象 oS 存放所有数据
+    iter = 0 # 迭代次数的初始化
+    entireSet = True # 违反 KKT 条件的标志符
+    alphaPairsChanged = 0 # 迭代中优化的次数
 
-    # init data struct for svm
-    svm = SVMStruct(mat(train_x), mat(train_y), C, toler, kernelOption)
-
-    # start training
-    entireSet = True
-    alphaPairsChanged = 0
-    iterCount = 0
-    # Iteration termination condition:
-    # 	Condition 1: reach max iteration
-    # 	Condition 2: no alpha changed after going through all samples,
-    # 				 in other words, all alpha (samples) fit KKT condition
-    while (iterCount < maxIter) and ((alphaPairsChanged > 0) or entireSet):
-        alphaPairsChanged = 0
-
-        # update alphas over all training examples
-        if entireSet:
-            for i in range(svm.numSamples):
-                alphaPairsChanged += innerLoop(svm, i)
-            print('---iter:%d entire set, alpha pairs changed:%d' % (iterCount, alphaPairsChanged))
-            iterCount += 1
-        # update alphas over examples where alpha is not 0 & not C (not on boundary)
+    # 从选择第一个 alpha 开始，优化所有alpha
+    while(iter < maxIter) and ((alphaPairsChanged > 0) or (entireSet )): # 优化的终止条件：在规定迭代次数下，是否遍历了整个样本或 alpha 是否优化
+        alphaPairsChanged  = 0
+        if entireSet: #
+            for i in range(oS.m): # 遍历所有对象
+                alphaPairsChanged += innerL(i ,oS) # 调用优化函数（不一定优化）
+            print("fullSet , iter: %d i %d, pairs changed %d" % (iter, i , alphaPairsChanged ))
+            iter += 1 # 迭代次数加 1
         else:
-            nonBoundAlphasList = nonzero((svm.alphas.A > 0) * (svm.alphas.A < svm.C))[0]
-            for i in nonBoundAlphasList:
-                alphaPairsChanged += innerLoop(svm, i)
-            print('---iter:%d non boundary, alpha pairs changed:%d' % (iterCount, alphaPairsChanged))
-            iterCount += 1
-
-        # alternate loop over all examples and non-boundary examples
-        # entireSet表示遍历了所有的样本，如果还不收敛，下一次就需要遍历 无界alpha 了
-        if entireSet:
+            nonBoundIs = nonzero((oS.alphas .A > 0) * (oS.alphas.A < C))[0]
+            for i in nonBoundIs : # 遍历所有非边界样本集
+                alphaPairsChanged += innerL(i, oS) # 调用优化函数（不一定优化）
+                print("non-bound, iter: %d i :%d, pairs changed %d" % (iter, i, alphaPairsChanged))
+            iter += 1 # 迭代次数加 1
+        if entireSet : # 没有违反KKT 条件的alpha ，终止迭代
             entireSet = False
-        # 无界alpha全部收敛了之后，可以考虑再遍历全部样本了
-        elif alphaPairsChanged == 0:
+        elif (alphaPairsChanged == 0): # 存在违反 KKT 的alpha
             entireSet = True
+        print("iteration number: %d" % iter)
+    return oS.b, oS.alphas # 返回截距值和 alphas
 
-    print('Congratulations, training complete! Took %fs!' % (time.time() - startTime))
-    return svm
+# 径向基核函数（高斯函数）
+def kernelTrans(X, A, kTup): # X 是样本集矩阵，A 是样本对象（矩阵的行向量） ， kTup 元组
+    m,n = shape(X)
+    K = mat(zeros((m,1)))
+    # 数据不用核函数计算
+    if kTup [0] == 'lin': K = X * A.T
 
+    # 用径向基核函数计算
+    elif kTup[0] == 'rbf':
+        for j in range(m):
+            deltaRow = X[j,:] - A
+            K[j] = deltaRow * deltaRow.T
+        K = exp(K/(-1*kTup[1]**2))
+    # kTup 元组值异常，抛出异常信息
+    else:
+        raise NameError('Houston We Have a Problem --That Kernel is not recognized')
+    return K
 
-# testing your trained svm model given test set
-def testSVM(svm, test_x, test_y):
-    test_x = mat(test_x)
-    test_y = mat(test_y)
-    numTestSamples = test_x.shape[0]
-    supportVectorsIndex = nonzero(svm.alphas.A > 0)[0]
-    supportVectors = svm.train_x[supportVectorsIndex]
-    supportVectorLabels = svm.train_y[supportVectorsIndex]
-    supportVectorAlphas = svm.alphas[supportVectorsIndex]
-    matchCount = 0
-    for i in range(numTestSamples):
-        kernelValue = calcKernelValue(supportVectors, test_x[i, :], svm.kernelOpt)
-        predict = kernelValue.T * multiply(supportVectorLabels, supportVectorAlphas) + svm.b
-        if sign(predict) == sign(test_y[i]):
-            matchCount += 1
-    accuracy = float(matchCount) / numTestSamples
-    return accuracy
-
-
-# show your trained svm model only available with 2-D data
-def showSVM(svm):
-    if svm.train_x.shape[1] != 2:
-        print("Sorry! I can not draw because the dimension of your data is not 2!")
-        return 1
-
-    # draw all samples
-    for i in range(svm.numSamples):
-        if svm.train_y[i] == -1:
-            plt.plot(svm.train_x[i, 0], svm.train_x[i, 1], 'or')
-        elif svm.train_y[i] == 1:
-            plt.plot(svm.train_x[i, 0], svm.train_x[i, 1], 'ob')
-
-    # mark support vectors
-    supportVectorsIndex = nonzero(svm.alphas.A > 0)[0]
-    for i in supportVectorsIndex:
-        plt.plot(svm.train_x[i, 0], svm.train_x[i, 1], 'oy')
-
-    # draw the classify line
-    w = zeros((2, 1))
-    for i in supportVectorsIndex:
-        w += multiply(svm.alphas[i] * svm.train_y[i], svm.train_x[i, :].T)
-    min_x = min(svm.train_x[:, 0])[0, 0]
-    max_x = max(svm.train_x[:, 0])[0, 0]
-    y_min_x = float(-svm.b - w[0] * min_x) / w[1]
-    y_max_x = float(-svm.b - w[0] * max_x) / w[1]
-    plt.plot([min_x, max_x], [y_min_x, y_max_x], '-g')
-    plt.show()
-
+# 训练样本集的错误率和测试样本集的错误率
+def testRbf(k1=1.3):
+    dataArr,labelArr = loadDataSet('D:\Project\Github\LearningMachineLearning\dataset\\1.txt')  # 训练样本的提取
+    b,alphas = smoP(dataArr, labelArr, 200, 0.0001, 10000, ('rbf', k1)) # 计算得到截距和对偶因子
+    datMat=mat(dataArr)
+    labelMat = mat(labelArr).transpose()
+    svInd=nonzero(alphas.A>0)[0] # 对偶因子大于零的值，支持向量的点对应对偶因子
+    sVs=datMat[svInd]
+    labelSV = labelMat[svInd]
+    print("there are %d Support Vectors" % shape(sVs)[0])
+    m,n = shape(datMat)
+    errorCount = 0
+    # 对训练样本集的测试
+    for i in range(m):
+        kernelEval = kernelTrans(sVs,datMat[i,:],('rbf', k1)) # 对象 i 的映射值
+        predict=kernelEval.T * multiply(labelSV,alphas[svInd]) + b # 预测值
+        if sign(predict)!=sign(labelArr[i]): errorCount += 1
+    print("the training error rate is: %f" % (float(errorCount)/m))
+    dataArr, labelArr = loadDataSet('D:\Project\Github\LearningMachineLearning\dataset\\2.txt') # 测试样本集的提取
+    errorCount = 0
+    datMat=mat(dataArr)
+    labelMat = mat(labelArr).transpose()
+    m,n = shape(datMat)
+    # 对测试样本集的测试
+    for i in range(m):
+        kernelEval = kernelTrans(sVs, datMat[i,:],('rbf', k1)) # 测试样本对象 i 的映射值
+        predict=kernelEval.T * multiply(labelSV,alphas[svInd]) + b # 预测值
+        if sign(predict)!=sign(labelArr[i]): errorCount += 1
+    print("the test error rate is: %f" % (float(errorCount)/m))
 
 if __name__ == '__main__':
-    print('hello')
-    print(mat(zeros(7,1)))
+
+    '''
+    # 显示计算的截距值b 和对偶因子 alphas
+    dataMat ,labelMat = loadDataSet('testSet.txt')
+    b, alphas = smoP(dataMat, labelMat , 0.6, 0.11, 40,('rbf',2))
+    print '------'
+    print b, '----',alphas
+    '''
+
+    # 支持向量机的测试
+    testRbf()

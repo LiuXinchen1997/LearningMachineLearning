@@ -1,7 +1,3 @@
-"""
-分类性能比较差 :-(
-"""
-
 #%%
 import numpy as np
 import time
@@ -13,7 +9,7 @@ import utils.CONSTANT
 #%%
 class SupportVectorMachine:
     def __init__(self, train_data, test_data, epsilon=utils.CONSTANT.DEFAULT_ZERO_PRECISION,
-                 C=1.0, kernel_option=('rbf', 1.0)):
+                 C=200, kernel_option=('rbf', 1.3)):
         """
         :param train_data: numpy.ndarray, shape: nsamples * nfeats
         :param test_data: numpy.ndarray, shape: nsamples * nfeats
@@ -31,7 +27,7 @@ class SupportVectorMachine:
         self.__errors_cache = np.zeros((self.__train_nsamples, 2))
 
         # SVM核心参数
-        self.__omega = np.zeros((self.__train_nfeats, ))
+        self.__alphas = np.zeros((self.__train_nsamples, ))
         self.__b = 0.0
 
     @staticmethod
@@ -73,12 +69,8 @@ class SupportVectorMachine:
     def train(self, epoch=100):
         # 求解参数，构建模型
         starttime = time.time()
-        alphas = self.__smo(epoch=epoch)
-        omega = self.__calc_omega_by_alphas(alphas)
-        self.__omega = omega  # b已在训练过程中更新完毕
+        self.__smo(epoch=epoch)  # 更新alphas和b
         endtime = time.time()
-        print('final parameter: omega: ', self.__omega)
-        print('b: %f\n' % self.__b)
         print('cost time: %d\n' % (endtime - starttime))
 
     # for SMO
@@ -97,31 +89,33 @@ class SupportVectorMachine:
 
         return omega
 
-    def __calc_fx(self, alphas, feat, update_omega=True):
-        omega = self.__calc_omega_by_alphas(alphas)
-        if update_omega:
-            self.__omega = omega
+    def __calc_train_fx(self, ind):
+        """
+        :param ind: 被计算的样本在训练集中的id
+        """
+        train_feats, train_labels = self.get_train_feats_and_labels()
+        np.dot((self.__alphas * train_labels).transpose(), self.__K[:, ind])
 
-        return np.dot(omega.transpose(), feat) + self.__b
 
     def __calc_errors_between_fx_and_label(self, alphas, feats, labels):
         errors = np.zeros((feats.shape[0], ), dtype=np.float)
         for i in range(feats.shape[0]):
-            errors[i] = self.__calc_fx(alphas, feats[i, :]) - labels[i]
+            errors[i] = self.__calc_train_fx(alphas, feats[i, :]) - labels[i]
 
         return errors
 
-    def __calc_error_for_sample_i(self, alphas, feat, label):
-        return self.__calc_fx(alphas, feat) - label
+    def __calc_error_for_train_sample(self, ind):
+        train_feats, train_labels = self.get_train_feats_and_labels()
+        return self.__calc_train_fx(ind) - train_labels[ind]
 
     def __update_errors_cache(self, alphas, ind, feat, label):
-        error = self.__calc_error_for_sample_i(alphas, feat, label)
+        error = self.__calc_error_for_train_sample(alphas, feat, label)
         self.__errors_cache[ind, 0] = 1
         self.__errors_cache[ind, 1] = error
 
     def __choose_k2_from_k1_for_alphas(self, alphas, k1):
         feats, labels = self.get_train_feats_and_labels()
-        error_1 = self.__calc_error_for_sample_i(alphas, feats[k1, :], labels[k1])
+        error_1 = self.__calc_error_for_train_sample(alphas, feats[k1, :], labels[k1])
         self.__update_errors_cache(alphas, k1, feats[k1, :], labels[k1])
         candidate_alphas = np.nonzero(self.__errors_cache[:, 0])[0]
 
@@ -131,7 +125,7 @@ class SupportVectorMachine:
             for i in range(alphas.shape[0]):
                 if i == k1:
                     continue
-                error_2 = self.__calc_error_for_sample_i(alphas, feats[i, :], labels[i])
+                error_2 = self.__calc_error_for_train_sample(alphas, feats[i, :], labels[i])
                 if max_ < np.abs(error_1 - error_2):
                     max_ = np.abs(error_1 - error_2)
                     k2 = i
@@ -143,7 +137,7 @@ class SupportVectorMachine:
         return k2
 
     def __single_is_fit_for_kkt(self, alphas, alpha_ind, feat, label):
-        target = label * self.__calc_fx(alphas, feat)
+        target = label * self.__calc_train_fx(alphas, feat)
         if target >= 1. and self.__x_equals_y(alphas[alpha_ind], 0):
             return True
         elif self.__x_equals_y(target, 1.) and 0. < alphas[alpha_ind] < self.__C:
@@ -152,11 +146,11 @@ class SupportVectorMachine:
             return True
         return False
 
-    def __inner_loop(self, alphas, alpha_ind):
+    def __inner_loop(self, alpha_ind):
         train_feats, train_labels = self.get_train_feats_and_labels()
         feat = train_feats[alpha_ind, :]
         label = train_labels[alpha_ind]
-        error_1 = self.__calc_error_for_sample_i(alphas, feat, label)
+        error_1 = self.__calc_error_for_train_sample(feat, label)
 
         # KKT 条件
         # 1) y_i * f(x_i) >= 1 and alpha_i == 0 (样本点位于边界外，对SVM模型不构成任何影响)
@@ -171,7 +165,7 @@ class SupportVectorMachine:
             k2 = self.__choose_k2_from_k1_for_alphas(alphas, k1)
             feat2 = train_feats[k2, :]
             label2 = train_labels[k2]
-            error_2 = self.__calc_error_for_sample_i(alphas, feat2, label2)
+            error_2 = self.__calc_error_for_train_sample(alphas, feat2, label2)
 
             alpha_1_old = alphas[k1]
             alpha_2_old = alphas[k2]
@@ -229,20 +223,17 @@ class SupportVectorMachine:
             return 0
 
     def __smo(self, epoch):
-        # alphas = np.zeros((self.__train_nsamples, ))
-        alphas = np.random.ranf((self.__train_nsamples, ))
-
         epoch_count = 0
         entire_set = True  # 是否要遍历全部样本集
         changed_alpha_pairs = 0  # 发生了变化的alpha对数
         while (epoch_count < epoch) and (changed_alpha_pairs > 0 or entire_set):
             if entire_set:
                 for i in range(self.__train_nsamples):
-                    changed_alpha_pairs += self.__inner_loop(alphas, i)
+                    changed_alpha_pairs += self.__inner_loop(self.__alphas, i)
             else:
-                non_bound_alphas = np.nonzero((alphas > 0) * (alphas < 0))[0]
+                non_bound_alphas = np.nonzero((self.__alphas > 0) * (self.__alphas < 0))[0]
                 for i in non_bound_alphas:
-                    changed_alpha_pairs += self.__inner_loop(alphas, i)
+                    changed_alpha_pairs += self.__inner_loop(self.__alphas, i)
 
             if entire_set:
                 entire_set = False
@@ -250,8 +241,6 @@ class SupportVectorMachine:
                 entire_set = True
 
             epoch_count += 1
-
-        return alphas
 
     def pred(self, feat):
         if np.dot(self.__omega.transpose(), feat) + self.__b > 0:
@@ -279,7 +268,7 @@ if __name__ == '__main__':
     train_data = datasetff[:100, :]
     test_data = datasetff[100:, :]
     dataset = LabeledTrainAndTestDataset(train_data, test_data=test_data)
-    dataset.visual_data(train_data)
+    # dataset.visual_data(train_data)
 
     # 获得模型
     svm = SupportVectorMachine(train_data, test_data, epsilon=0.0001, C=200, kernel_option=('rbf', 1.3))
