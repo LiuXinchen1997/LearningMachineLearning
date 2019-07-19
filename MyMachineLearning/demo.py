@@ -185,7 +185,7 @@ def testRbf(k1=1.3):
     # 对训练样本集的测试
     for i in range(m):
         kernelEval = kernelTrans(sVs,datMat[i,:],('rbf', k1)) # 对象 i 的映射值
-        predict=kernelEval.T * multiply(labelSV,alphas[svInd]) + b # 预测值
+        predict=kernelEval.T * multiply(labelSV, alphas[svInd]) + b # 预测值
         if sign(predict)!=sign(labelArr[i]): errorCount += 1
     print("the training error rate is: %f" % (float(errorCount)/m))
     dataArr, labelArr = loadDataSet('D:\Project\Github\LearningMachineLearning\dataset\\2.txt') # 测试样本集的提取

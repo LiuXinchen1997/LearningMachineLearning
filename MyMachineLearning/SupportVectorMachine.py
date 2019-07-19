@@ -22,41 +22,41 @@ class SupportVectorMachine:
 
         self.__epsilon = epsilon
         self.__C = C
-        self.__K = self.__calc_kernel_matrix(self.__train_data, kernel_option)
+        self.__kernel_option = kernel_option
+        self.__K = self.__calc_kernel_matrix(self.__train_data, kernel_option)  # for train data
         # 记录每个样本的error，第一个0/1表示error是否被优化，第二个记录error值
-        self.__errors_cache = np.zeros((self.__train_nsamples, 2))
+        self.__train_errors_cache = np.zeros((self.__train_nsamples, 2))
 
         # SVM核心参数
         self.__alphas = np.zeros((self.__train_nsamples, ))
         self.__b = 0.0
 
     @staticmethod
-    def __calc_kernel_value(feats, ind, kernel_option):
+    def __calc_kernel_value(feats, feat_x, kernel_option):
         nsamples = feats.shape[0]
-        feat = feats[ind, :]
 
         value = np.zeros((nsamples, ))
         kernel_type = kernel_option[0]
         if 'linear' == kernel_type:
-            value = np.dot(feats, feat.transpose())
+            value = np.dot(feats, feat_x.transpose())
         elif 'rbf' == kernel_type:
             sigma = kernel_option[1]
             if 0. == sigma:
                 sigma = 1.0
 
             for i in range(nsamples):
-                diff = feat - feats[i, :]
+                diff = feat_x - feats[i, :]
                 value[i] = np.exp(np.dot(diff, diff.transpose()) / (-2. * sigma ** 2))
 
         return value
 
     @staticmethod
-    def __calc_kernel_matrix(train_data, kernel_option=('rbf', 1.0)):
-        nsamples = train_data.shape[0]
-        feats = train_data[:, :-1]
+    def __calc_kernel_matrix(data, kernel_option=('rbf', 1.3)):
+        nsamples = data.shape[0]
+        feats = data[:, :-1]
         kernel_matrix = np.zeros((nsamples, nsamples))
         for i in range(nsamples):
-            kernel_matrix[:, i] = SupportVectorMachine.__calc_kernel_value(feats, i, kernel_option)
+            kernel_matrix[:, i] = SupportVectorMachine.__calc_kernel_value(feats, feats[i, :], kernel_option)
 
         return kernel_matrix
 
@@ -79,53 +79,46 @@ class SupportVectorMachine:
             return True
         return False
 
-    def __calc_omega_by_alphas(self, alphas):
-        train_feats, train_labels = self.get_train_feats_and_labels()
-        omega = np.zeros((self.__train_nfeats, ))
-        for i in range(self.__train_nsamples):
-            if np.abs(alphas[i]) <= self.__epsilon:
-                continue
-            omega += alphas[i] * train_labels[i] * train_feats[i, :]
-
-        return omega
-
     def __calc_train_fx(self, ind):
         """
         :param ind: 被计算的样本在训练集中的id
         """
         train_feats, train_labels = self.get_train_feats_and_labels()
-        np.dot((self.__alphas * train_labels).transpose(), self.__K[:, ind])
+        output = float(np.dot((self.__alphas * train_labels).transpose(), self.__K[:, ind]) + self.__b)
+        return output
 
-
-    def __calc_errors_between_fx_and_label(self, alphas, feats, labels):
-        errors = np.zeros((feats.shape[0], ), dtype=np.float)
-        for i in range(feats.shape[0]):
-            errors[i] = self.__calc_train_fx(alphas, feats[i, :]) - labels[i]
+    def __calc_errors_for_train_samples(self):
+        train_feats, train_labels = self.get_train_feats_and_labels()
+        errors = np.zeros((train_feats.shape[0], ), dtype=np.float)
+        for i in range(train_feats.shape[0]):
+            errors[i] = self.__calc_train_fx(i)
 
         return errors
 
     def __calc_error_for_train_sample(self, ind):
+        """
+        :param ind: 被计算的样本在训练集中的id
+        """
         train_feats, train_labels = self.get_train_feats_and_labels()
         return self.__calc_train_fx(ind) - train_labels[ind]
 
-    def __update_errors_cache(self, alphas, ind, feat, label):
-        error = self.__calc_error_for_train_sample(alphas, feat, label)
-        self.__errors_cache[ind, 0] = 1
-        self.__errors_cache[ind, 1] = error
+    def __update_train_errors_cache(self, ind):
+        error = self.__calc_error_for_train_sample(ind)
+        self.__train_errors_cache[ind, 0] = 1
+        self.__train_errors_cache[ind, 1] = error
 
-    def __choose_k2_from_k1_for_alphas(self, alphas, k1):
-        feats, labels = self.get_train_feats_and_labels()
-        error_1 = self.__calc_error_for_train_sample(alphas, feats[k1, :], labels[k1])
-        self.__update_errors_cache(alphas, k1, feats[k1, :], labels[k1])
-        candidate_alphas = np.nonzero(self.__errors_cache[:, 0])[0]
+    def __choose_k2_from_k1_for_alphas(self, k1):
+        error_1 = self.__calc_error_for_train_sample(k1)
+        self.__update_train_errors_cache(k1)
+        candidate_alphas = np.nonzero(self.__train_errors_cache[:, 0])[0]
 
         max_ = -1
         k2 = 0
         if len(candidate_alphas) > 1:
-            for i in range(alphas.shape[0]):
+            for i in range(self.__alphas.shape[0]):
                 if i == k1:
                     continue
-                error_2 = self.__calc_error_for_train_sample(alphas, feats[i, :], labels[i])
+                error_2 = self.__calc_error_for_train_sample(i)
                 if max_ < np.abs(error_1 - error_2):
                     max_ = np.abs(error_1 - error_2)
                     k2 = i
@@ -136,13 +129,16 @@ class SupportVectorMachine:
 
         return k2
 
-    def __single_is_fit_for_kkt(self, alphas, alpha_ind, feat, label):
-        target = label * self.__calc_train_fx(alphas, feat)
-        if target >= 1. and self.__x_equals_y(alphas[alpha_ind], 0):
+    def __sample_is_fit_for_kkt(self, alpha_ind):
+        train_feats, train_labels = self.get_train_feats_and_labels()
+        label = train_labels[alpha_ind]
+
+        target = label * self.__calc_train_fx(alpha_ind)
+        if target >= 1. and self.__x_equals_y(self.__alphas[alpha_ind], 0):
             return True
-        elif self.__x_equals_y(target, 1.) and 0. < alphas[alpha_ind] < self.__C:
+        elif self.__x_equals_y(target, 1.) and 0. < self.__alphas[alpha_ind] < self.__C:
             return True
-        elif target <= 1. and self.__x_equals_y(alphas[alpha_ind], self.__C):
+        elif target <= 1. and self.__x_equals_y(self.__alphas[alpha_ind], self.__C):
             return True
         return False
 
@@ -150,73 +146,73 @@ class SupportVectorMachine:
         train_feats, train_labels = self.get_train_feats_and_labels()
         feat = train_feats[alpha_ind, :]
         label = train_labels[alpha_ind]
-        error_1 = self.__calc_error_for_train_sample(feat, label)
 
         # KKT 条件
         # 1) y_i * f(x_i) >= 1 and alpha_i == 0 (样本点位于边界外，对SVM模型不构成任何影响)
         # 2) y_i * f(x_i) == 1 and 0 < alpha_i < C (支持向量，在边界上)
         # 3) y_i * f(x_i) <= 1 and alpha_i == C (支持向量，在两边界之间，正确划分但置信度低或者被错误划分)
         # y_i * E_i = y_i * f(x_i) - y_i^2 = y_i * f(x_i) - 1
-        if not self.__single_is_fit_for_kkt(alphas, alpha_ind, feat, label):
+        if not self.__sample_is_fit_for_kkt(alpha_ind):
             # 此时可以将alpha[alpha_ind]作为alpha_i，即被选择的第一个变量
             k1 = alpha_ind
+            error_1 = self.__calc_error_for_train_sample(k1)
 
             # 1. 根据alpha k1选择另一个alpha_k2
-            k2 = self.__choose_k2_from_k1_for_alphas(alphas, k1)
+            k2 = self.__choose_k2_from_k1_for_alphas(k1)
             feat2 = train_feats[k2, :]
             label2 = train_labels[k2]
-            error_2 = self.__calc_error_for_train_sample(alphas, feat2, label2)
+            error_2 = self.__calc_error_for_train_sample(k2)
 
-            alpha_1_old = alphas[k1]
-            alpha_2_old = alphas[k2]
+            alpha_1_old = self.__alphas[k1].copy()
+            alpha_2_old = self.__alphas[k2].copy()
 
             # 2. 计算alpha_k2的L和H
-            if label == label2:
-                L = np.max((0., alphas[k2] - alphas[k1]))
-                H = np.min((self.__C, self.__C + alphas[k2] - alphas[k1]))
+            if label != label2:  # *
+                L = np.max((0., self.__alphas[k2] - self.__alphas[k1]))
+                H = np.min((self.__C, self.__C + self.__alphas[k2] - self.__alphas[k1]))
             else:
-                L = np.max((0., alphas[k2] + alphas[k1] - self.__C))
-                H = np.min((self.__C, alphas[k1] + alphas[k2]))
+                L = np.max((0., self.__alphas[k2] + self.__alphas[k1] - self.__C))
+                H = np.min((self.__C, self.__alphas[k1] + self.__alphas[k2]))
             if L == H:
                 return 0
 
             # 3. 计算eta
-            eta = 2 * self.__K[k1, k2] - self.__K[k1, k1] - self.__K[k2, k2]
+            eta = 2. * self.__K[k1, k2] - self.__K[k1, k1] - self.__K[k2, k2]
             if eta >= 0:  # 此处代码待完善
                 return 0
 
             # 4. 更新alpha_k2
-            alphas[k2] = alpha_2_old + label2 * (error_1 - error_2) / eta
+            self.__alphas[k2] -= label2 * (error_1 - error_2) / eta  # *
 
             # 5. 裁剪alpha
-            if alphas[k2] > H:
-                alphas[k2] = H
-            elif alphas[k2] < L:
-                alphas[k2] = L
+            if self.__alphas[k2] > H:
+                self.__alphas[k2] = H
+            elif self.__alphas[k2] < L:
+                self.__alphas[k2] = L
 
             # 6. 如果alpha_k2基本没有变化，则认为收敛了
-            if np.abs(alphas[k2] - alpha_2_old) <= self.__epsilon:
-                self.__update_errors_cache(alphas, k2, feat2, label2)
+            if np.abs(self.__alphas[k2] - alpha_2_old) <= self.__epsilon:
+                self.__update_train_errors_cache(k2)
                 return 0
 
             # 7. 更新alpha_k1
-            alphas[k1] = alpha_1_old + label * label2 * (alpha_2_old - alphas[k2])
+            self.__alphas[k1] += label * label2 * (alpha_2_old - self.__alphas[k2])
 
             # 8. 更新b
-            b1 = self.__b - error_1 - label * (alphas[k1] - alpha_1_old) * self.__K[k1, k1] - \
-                 label2 * (alphas[k2] - alpha_2_old) * self.__K[k1, k2]
-            b2 = self.__b - error_2 - label * (alphas[k1] - alpha_1_old) * self.__K[k1, k2] - \
-                 label2 * (alphas[k2] - alpha_2_old) * self.__K[k2, k2]
-            if 0 < alphas[k1] < self.__C:
+            b1 = self.__b - error_1 - label * (self.__alphas[k1] - alpha_1_old) * self.__K[k1, k1] - \
+                 label2 * (self.__alphas[k2] - alpha_2_old) * self.__K[k1, k2]
+            b2 = self.__b - error_2 - label * (self.__alphas[k1] - alpha_1_old) * self.__K[k1, k2] - \
+                 label2 * (self.__alphas[k2] - alpha_2_old) * self.__K[k2, k2]
+            if 0 < self.__alphas[k1] < self.__C:
                 self.__b = b1
-            elif 0 < alphas[k2] < self.__C:
+            elif 0 < self.__alphas[k2] < self.__C:
                 self.__b = b2
             else:
                 self.__b = (b1 + b2) / 2.
 
             # 9. 更新error
-            self.__update_errors_cache(alphas, k1, feat, label)
-            self.__update_errors_cache(alphas, k2, feat2, label2)
+            self.__update_train_errors_cache(k1)
+            self.__update_train_errors_cache(k2)
 
             return 1
         else:
@@ -226,14 +222,15 @@ class SupportVectorMachine:
         epoch_count = 0
         entire_set = True  # 是否要遍历全部样本集
         changed_alpha_pairs = 0  # 发生了变化的alpha对数
+
         while (epoch_count < epoch) and (changed_alpha_pairs > 0 or entire_set):
             if entire_set:
                 for i in range(self.__train_nsamples):
-                    changed_alpha_pairs += self.__inner_loop(self.__alphas, i)
+                    changed_alpha_pairs += self.__inner_loop(i)
             else:
-                non_bound_alphas = np.nonzero((self.__alphas > 0) * (self.__alphas < 0))[0]
+                non_bound_alphas = np.nonzero((self.__alphas > 0) * (self.__alphas < self.__C))[0]
                 for i in non_bound_alphas:
-                    changed_alpha_pairs += self.__inner_loop(self.__alphas, i)
+                    changed_alpha_pairs += self.__inner_loop(i)
 
             if entire_set:
                 entire_set = False
@@ -243,17 +240,26 @@ class SupportVectorMachine:
             epoch_count += 1
 
     def pred(self, feat):
-        if np.dot(self.__omega.transpose(), feat) + self.__b > 0:
+        train_feats, train_labels = self.get_train_feats_and_labels()
+        kernel_value = self.__calc_kernel_value(train_feats, feat, self.__kernel_option)
+        if np.dot((self.__alphas * train_labels).transpose(), kernel_value) + self.__b > 0:
             return 1
         else:
             return -1
 
-    def evaluate_result(self):
+    def evaluate_test_dataset(self):
         correct = 0
         for sample in self.__test_data:
             correct += (self.pred(sample[:-1]) == sample[-1])
 
         return 1 - correct / self.__test_data.shape[0]
+
+    def evaluate_train_dataset(self):
+        correct = 0
+        for sample in self.__train_data:
+            correct += (self.pred(sample[:-1]) == sample[-1])
+
+        return 1 - correct / self.__train_data.shape[0]
 
 
 #%%
@@ -272,6 +278,7 @@ if __name__ == '__main__':
 
     # 获得模型
     svm = SupportVectorMachine(train_data, test_data, epsilon=0.0001, C=200, kernel_option=('rbf', 1.3))
-    svm.train(epoch=200000)
+    svm.train(epoch=10000)
 
-    print('error rate %f\n' % svm.evaluate_result())
+    print('train dataset error rate %f\n' % svm.evaluate_train_dataset())
+    print('test dataset error rate %f\n' % svm.evaluate_test_dataset())
