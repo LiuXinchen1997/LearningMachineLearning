@@ -5,8 +5,10 @@ Coding for machine learning practice!
 
 ### 0 General
 
-1. 模型类不包括数据集成员对象，而应直接包括数据
-2. 使用pandas改写
+index|name|finished
+-|-|-
+1| 模型类不包括数据集成员对象，而应直接包括数据|
+2| 使用pandas改写|
 
 ### 1 Linear Model
 
