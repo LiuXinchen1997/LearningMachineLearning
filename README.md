@@ -12,23 +12,25 @@ Coding for machine learning practice!
 
 index|name|finished
 -|-|-
-1|2|3
-
-1. Logistic Regression √
-2. LDA √
-3. KLDA
+1| Logistic Regression|√
+2| LDA| √
+3| KLDA| 
 
 ### 2 Decision Tree
 
-1. 连续属性处理 √
-2. 预剪枝、后剪枝
-3. 缺失值处理
-4. 使用pandas提升程序效率
-5. 决策树可视化
+index|name|finished
+-|-|-
+1| 连续属性处理| √
+2| 预剪枝、后剪枝|
+3| 缺失值处理|
+4| 使用pandas提升程序效率|
+5| 决策树可视化|
 
 ### 3 Support Vector Machine
 
-1. 分类效果差 √
-2. 多种核函数实现 √
-3. 数据可视化 √
-4. eta >= 0的情况
+index|name|finished
+-|-|-
+1| 分类效果差| √
+2| 多种核函数实现| √
+3| 数据可视化| √
+4| eta >= 0的情况|
