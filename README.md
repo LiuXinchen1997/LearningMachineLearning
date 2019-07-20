@@ -10,6 +10,10 @@ Coding for machine learning practice!
 
 ### 1 Linear Model
 
+index|name|finished
+-|-|-
+1|2|3
+
 1. Logistic Regression √
 2. LDA √
 3. KLDA
