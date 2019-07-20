@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 
 import utils.CONSTANT
 
+
 #%%
 class LabeledDatasetFromFile:
     def __init__(self, data_address, datafile_type='xlsx'):
@@ -14,10 +15,9 @@ class LabeledDatasetFromFile:
         if datafile_type in ['xlsx', 'xls']:
             self.readbook = xlrd.open_workbook(data_address)
 
-    def get_data_by_sheet(self, index, mode=''):
+    def get_data_by_sheet(self, index, mode='', feat_indces=None, label_indces=None):
         """
         :param index: index of sheet
-        :param normal:
         :return: nsamples * nfeats
         """
         sheet = self.readbook.sheet_by_index(index)
@@ -32,10 +32,16 @@ class LabeledDatasetFromFile:
         if mode == utils.CONSTANT.TRANS:
             data = data.transpose()
 
+        nsamples = data.shape[0]
+        if feat_indces is not None and label_indces is not None:
+            feats = data[:, feat_indces]
+            labels = data[:, label_indces]
+            data = np.concatenate((feats, labels.reshape((nsamples, 1))), 1)
+
         return data
 
-    def get_feats_and_labels_by_sheet(self, index, mode=''):
-        data = self.get_data_by_sheet(index, mode)
+    def get_feats_and_labels_by_sheet(self, index, mode='', feat_indces=None, label_indces=None):
+        data = self.get_data_by_sheet(index, mode, feat_indces, label_indces)
         nfeats = data.shape[1]
         feats = data[:, :nfeats - 1]
         labels = data[:, nfeats - 1]

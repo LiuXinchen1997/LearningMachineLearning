@@ -14,9 +14,10 @@ index|name|finished
 
 index|name|finished
 -|-|-
-1| Logistic Regression|√
-2| LDA| √
-3| KLDA| 
+1| Linear Regression| √
+2| Logistic Regression|√
+3| Linear Discriminant Analysis| √
+4| Kernel LDA| 
 
 ### 2 Decision Tree
 

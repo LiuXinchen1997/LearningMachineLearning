@@ -382,7 +382,7 @@ class DecisionTree:
         error = 1 - accuracy / self.__nsamples
         return error
 
-    def evaluate_result_with_new_data(self, feats, labels):
+    def evaluate_result_with_test_data(self, feats, labels):
         if self.__tree is None:
             return -1
         accuracy = 0
@@ -394,10 +394,10 @@ class DecisionTree:
         error = 1 - accuracy / nsamples
         return error
 
-    def evaluate_result_with_new_data2(self, dataset):
+    def evaluate_result_with_test_data2(self, dataset):
         feats = dataset[:, :-1]
         labels = dataset[:, -1]
-        return self.evaluate_result_with_new_data(feats, labels)
+        return self.evaluate_result_with_test_data(feats, labels)
 
 
 #%%
@@ -410,7 +410,6 @@ if __name__ == '__main__':
     dataset = LabeledDataset(feats, labels,
                              columns=['色泽', '根蒂', '敲声', '纹理', '脐部', '触感', '密度', '含糖率'], seq_attrs={6, 7})
     # print(feats)
-
     tree = DecisionTree(dataset)
 
     # ID3

@@ -7,20 +7,69 @@ import utils.CONSTANT
 
 
 #%%
-class LogisticRegression:
-    def __init__(self, data_address, datafile_type='xlsx', sheet_index=0, mode=utils.CONSTANT.TRANS,
-                 feat_inds=None, label_inds=None):
-        dataset = LabeledDatasetFromFile(data_address, datafile_type)
-        data = dataset.get_data_by_sheet(sheet_index, mode=mode)
+class LinearRegression:
+    def __init__(self, train_data):
+        self.__train_feats = train_data[:, :-1]
+        self.__train_labels = train_data[:, -1].astype(np.int32)
+        self.__train_nsamples = self.__train_feats.shape[0]
+        self.__train_nfeats = self.__train_feats.shape[1]
 
-        # 数据预处理
-        if feat_inds is None:
-            feat_inds = [i for i in range(data.shape[1]-1)]
-        if label_inds is None:
-            label_inds = [[data.shape[1]-1]]
-        self.__feats = data[:, feat_inds]
+        self.__omega = None
+        self.__b = None
+
+    def train(self):
+        feats = np.mat(np.concatenate((self.__train_feats, np.ones((self.__train_feats.shape[0], 1))), 1))  # 给属性增加一个偏置项
+        labels = np.mat(self.__train_labels)
+        omega = ((feats.T * feats).I * feats.T * labels.T).A
+        self.__omega = omega[:-1].reshape((self.__train_nfeats,))
+        self.__b = omega[-1][0]
+
+    def pred(self, feat):
+        if np.dot(self.__omega.transpose(), feat) + self.__b > 0:
+            return 1
+        else:
+            return 0
+
+    def evaluate_with_train_data(self):
+        if self.__omega is None:
+            return -1
+
+        accuracy = 0
+        for feat, label in zip(self.__train_feats, self.__train_labels):
+            judge = self.pred(feat)
+            accuracy += (judge == label)
+
+        error = 1 - accuracy / self.__train_nsamples
+        return error
+
+    def visual_train_data_and_model(self):
+        if self.__train_nfeats != 2:
+            return
+
+        if self.__omega is None or self.__b is None:
+            return
+
+        for i in range(self.__train_nsamples):
+            if self.__train_labels[i] == 0:
+                plt.plot(self.__train_feats[i, 0], self.__train_feats[i, 1], '+r')
+            else:
+                plt.plot(self.__train_feats[i, 0], self.__train_feats[i, 1], '*g')
+
+        min_x = np.min(self.__train_feats[:, 0])
+        max_x = np.max(self.__train_feats[:, 0])
+        min_y = (-self.__b - self.__omega[0] * min_x) / self.__omega[1]
+        max_y = (-self.__b - self.__omega[0] * max_x) / self.__omega[1]
+        plt.plot([min_x, max_x], [min_y, max_y])
+
+        plt.title('Linear Regression')
+        plt.show()
+
+
+class LogisticRegression:
+    def __init__(self, train_data):
+        self.__feats = train_data[:, :-1]
         self.__feats = np.concatenate((self.__feats, np.ones((self.__feats.shape[0], 1))), 1)  # 给属性增加一个偏置项
-        self.__labels = data[:, label_inds].astype(np.int32)
+        self.__labels = train_data[:, -1].astype(np.int32)
         self.__nsamples = self.__feats.shape[0]
         self.__nfeats = self.__feats.shape[1]
 
@@ -45,7 +94,7 @@ class LogisticRegression:
         res = np.zeros(self.__nfeats)
         for i in range(self.__nsamples):
             p1 = self.__calc_p1(self.__feats[i, :])
-            item = np.dot(self.__feats[i, :].reshape((self.__feats[i, :].shape[0], 1)), (self.__labels[i] - p1))
+            item = np.dot(self.__feats[i, :], (self.__labels[i] - p1))
             res -= item
 
         return res
@@ -84,8 +133,7 @@ class LogisticRegression:
         else:
             return 0
 
-    def evaluate_result(self):
-        # 训练集和测试集是同一个集合
+    def evaluate_with_train_data(self):
         if self.__beta is None:
             return -1
 
@@ -99,18 +147,9 @@ class LogisticRegression:
 
 
 class LinearDiscriminantAnalysis:
-    def __init__(self, data_address, datafile_type='xlsx', sheet_index=0, mode=utils.CONSTANT.TRANS,
-                 feat_inds=None, label_inds=None):
-        dataset = LabeledDatasetFromFile(data_address, datafile_type)
-        data = dataset.get_data_by_sheet(sheet_index, mode=mode)
-
-        # 数据预处理
-        if feat_inds is None:
-            feat_inds = [i for i in range(data.shape[1] - 1)]
-        if label_inds is None:
-            label_inds = [[data.shape[1] - 1]]
-        self.__feats = data[:, feat_inds]
-        self.__labels = data[:, label_inds].astype(np.int32)
+    def __init__(self, train_data):
+        self.__feats = train_data[:, :-1]
+        self.__labels = train_data[:, -1].astype(np.int32)
         self.__nsamples = self.__feats.shape[0]
         self.__nfeats = self.__feats.shape[1]
 
@@ -188,7 +227,7 @@ class LinearDiscriminantAnalysis:
             else:
                 return 0
 
-    def evaluate_result(self):
+    def evaluate_with_train_data(self):
         # 训练集和测试集是同一个集合
         if self.__omega is None:
             return -1
@@ -202,7 +241,7 @@ class LinearDiscriminantAnalysis:
         return error
 
     # 此函数在功能上没有普适性，仅适用于西瓜数据集3.0
-    def draw_figure(self):
+    def visual_train_data_and_lda_model(self):
         if self.__X0.shape[1] != 2:
             return -1
 
@@ -240,17 +279,35 @@ class LinearDiscriminantAnalysis:
 
 #%%
 if __name__ == '__main__':
-    # 对数几率回归
     data_address = r'D:\Project\Github\LearningMachineLearning\dataset\watermelon3.xlsx'
-    classifier = LogisticRegression(data_address, feat_inds=[6, 7], label_inds=[8])
+    datasetff = LabeledDatasetFromFile(data_address)
+    entire_train_data = datasetff.get_data_by_sheet(0, mode=utils.CONSTANT.TRANS)
+    entire_train_data.astype(np.float)
+    selected_train_data = datasetff.get_data_by_sheet(0, mode=utils.CONSTANT.TRANS, feat_indces=[6, 7], label_indces=[8])
+    selected_train_data.astype(np.float)
+
+    # 线性回归
+    print('1. Linear Regression:')
+    classifier = LinearRegression(selected_train_data)
     classifier.train()
-    error = classifier.evaluate_result()
+    classifier.visual_train_data_and_model()
+    error = classifier.evaluate_with_train_data()  # 对于线性不可分的样本，分类性能很差
     if error != -1:
         print('Error: ', error * 100, '%')
 
-    #  线性判别分析
-    classifier2 = LinearDiscriminantAnalysis(data_address, feat_inds=[6,7], label_inds=[8])
-    print(classifier2.get_labels())
-    print(classifier2.train())
-    classifier2.draw_figure()
-    print(classifier2.evaluate_result())  # LDA需要应用于线性可分的样本，否则性能会很差
+    # 对数几率回归
+    print('2. Logistic Regression:')
+    classifier2 = LogisticRegression(selected_train_data)
+    classifier2.train()
+    error = classifier2.evaluate_with_train_data()
+    if error != -1:
+        print('Error: ', error * 100, '%')
+
+    # 线性判别分析
+    print('3. Linear Discriminant Analysis:')
+    classifier3 = LinearDiscriminantAnalysis(selected_train_data)
+    classifier3.train()
+    classifier3.visual_train_data_and_lda_model()
+    error = classifier3.evaluate_with_train_data()  # LDA需要应用于线性可分的样本，否则性能会很差
+    if error != -1:
+        print('Error: ', error * 100, '%')
