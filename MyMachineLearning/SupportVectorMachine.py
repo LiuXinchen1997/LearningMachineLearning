@@ -1,6 +1,7 @@
 #%%
 import numpy as np
 import time
+from matplotlib import pyplot as plt
 
 from MyMachineLearning.Dataset import LabeledDatasetFromFile, LabeledTrainAndTestDataset
 import utils.CONSTANT
@@ -71,7 +72,7 @@ class SupportVectorMachine:
         starttime = time.time()
         self.__smo(epoch=epoch)  # 更新alphas和b
         endtime = time.time()
-        print('cost time: %d\n' % (endtime - starttime))
+        print('cost time for training svm model: %d sec.' % (endtime - starttime))
 
     # for SMO
     def __x_equals_y(self, x, y):
@@ -261,6 +262,87 @@ class SupportVectorMachine:
 
         return 1 - correct / self.__train_data.shape[0]
 
+    def visual_data_and_svm_model(self, data, title=''):
+        start_time = time.time()
+        if data.shape[1] - 1 != 2:  # 特征必须是二维才能可视化！
+            return
+
+        # 绘制样本点
+        for sample in data:
+            if sample[-1] == 1:
+                plt.plot(sample[0], sample[1], '+r')
+            else:
+                plt.plot(sample[0], sample[1], '*g')
+
+        # 绘制SVM
+        min_x = np.min(data[:, 0])
+        max_x = np.max(data[:, 0])
+        min_y = np.min(data[:, 1])
+        max_y = np.max(data[:, 1])
+        min_ = np.inf
+        for i in range(data.shape[0]):
+            for j in range(data.shape[0]):
+                if j == i:
+                    continue
+                diff = data[i, -3:-1] - data[j, -3:-1]
+                tmp = np.sqrt(np.dot(diff.transpose(), diff))
+                if 0 < tmp < min_:
+                    min_ = tmp
+
+        path_points = []
+        step = min_ * 0.5
+        cur_x = min_x
+        cur_y = min_y
+        pre_label = 0
+        pre_x = pre_y = 0
+        while cur_x <= max_x:
+            while cur_y <= max_y:
+                cur_label = self.pred(np.array([cur_x, cur_y]))
+                if pre_label != 0 and pre_label != cur_label:
+                    path_points.append([(cur_x + pre_x) / 2., (cur_y + pre_y) / 2.])
+                pre_label = cur_label
+                pre_x = cur_x
+                pre_y = cur_y
+                cur_y += step
+
+            pre_label = 0
+            pre_x = pre_y = 0
+            cur_y = min_y
+            cur_x += step
+
+        sorted_path_points = []
+        indces = [i for i in range(len(path_points))]
+        cur_ind = 0
+        indces.remove(cur_ind)
+        sorted_path_points.append(path_points[cur_ind])
+        min_dist = np.inf
+        min_ind = -1
+        while len(indces) > 0:
+            for ind in indces:
+                diff = np.array(path_points[cur_ind]) - np.array(path_points[ind])
+                if min_dist > np.dot(diff.transpose(), diff):
+                    min_dist = np.dot(diff.transpose(), diff)
+                    min_ind = ind
+
+            cur_ind = min_ind
+            min_dist = np.inf
+            min_ind = -1
+            indces.remove(cur_ind)
+            sorted_path_points.append(path_points[cur_ind])
+
+        for i in range(len(sorted_path_points)):
+            if i == len(sorted_path_points) - 1:
+                plt.plot([sorted_path_points[i][0], sorted_path_points[0][0]],
+                         [sorted_path_points[i][1], sorted_path_points[0][1]], 'b')
+                continue
+            plt.plot([sorted_path_points[i][0], sorted_path_points[i + 1][0]],
+                     [sorted_path_points[i][1], sorted_path_points[i + 1][1]], 'b')
+
+        plt.title(title)
+        plt.show()
+        end_time = time.time()
+        print('cost time for visualization (title: %s) is %d sec.' % (title, end_time - start_time))
+
 
 #%%
 if __name__ == '__main__':
@@ -276,9 +358,14 @@ if __name__ == '__main__':
     dataset = LabeledTrainAndTestDataset(train_data, test_data=test_data)
     # dataset.visual_data(train_data)
 
-    # 获得模型
+    # 训练模型
     svm = SupportVectorMachine(train_data, test_data, epsilon=0.0001, C=200, kernel_option=('rbf', 1.3))
     svm.train(epoch=10000)
 
-    print('train dataset error rate %f\n' % svm.evaluate_train_dataset())
-    print('test dataset error rate %f\n' % svm.evaluate_test_dataset())
+    # 预测数据
+    print('train dataset error rate %f' % svm.evaluate_train_dataset())
+    print('test dataset error rate %f' % svm.evaluate_test_dataset())
+
+    # 可视化
+    svm.visual_data_and_svm_model(train_data, 'SVM for train data')
+    svm.visual_data_and_svm_model(test_data, 'SVM for test data')
