@@ -34,20 +34,43 @@ class SupportVectorMachine:
 
     @staticmethod
     def __calc_kernel_value(feats, feat_x, kernel_option):
+        """
+        :param kernel_option
+        1. 线性核：('linear')
+        2. 多项式核：('poly', d)
+        3. 高斯核：('rbf', sigma)
+        4. 拉普拉斯核：('laplace', sigma)
+        5. Sigmoid核：('sigmoid', beta, theta)
+        """
         nsamples = feats.shape[0]
 
         value = np.zeros((nsamples, ))
         kernel_type = kernel_option[0]
-        if 'linear' == kernel_type:
+        if 'linear' == kernel_type or 'l' == kernel_type:
             value = np.dot(feats, feat_x.transpose())
+        elif 'poly' == kernel_type:
+            d = kernel_option[1]
+            value = np.dot(feats, feat_x.transpose()) ** d
         elif 'rbf' == kernel_type:
             sigma = kernel_option[1]
-            if 0. == sigma:
+            if sigma <= 0.:
                 sigma = 1.0
 
             for i in range(nsamples):
                 diff = feat_x - feats[i, :]
                 value[i] = np.exp(np.dot(diff, diff.transpose()) / (-2. * sigma ** 2))
+        elif 'laplace' == kernel_type:
+            sigma = kernel_option[1]
+            if sigma <= 0.:
+                sigma = 1.0
+
+            for i in range(nsamples):
+                diff = feat_x - feats[i, :]
+                value[i] = np.exp(np.sqrt(np.dot(diff, diff.transpose())) / (-1. * sigma))
+        elif 'sigmoid' == kernel_type:
+            beta = kernel_option[1]
+            theta = kernel_option[2]
+            value = np.tanh(beta * np.dot(feats, feat_x.transpose()) + theta)
 
         return value
 

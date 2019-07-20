@@ -25,6 +25,6 @@ Coding for machine learning practice!
 ### 3 Support Vector Machine
 
 1. 分类效果差 √
-2. 多种核函数实现
+2. 多种核函数实现 √
 3. 数据可视化 √
 4. eta >= 0的情况
