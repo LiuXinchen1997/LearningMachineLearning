@@ -1,16 +1,32 @@
 # LearningMachineLearning
-Coding for machine learning practice!
 
-## to do list
+> Coding for machine learning practice!
 
-### 0 General
+## 1 variable naming rule
+
+variable|explanation
+-|-
+feat| feature vector of single sample
+label| label of single sample, often just a integer
+sample| vector concatenate feature vector and label of single sample
+feats| feature vectors of all samples (often for train dataset or test dataset)
+labels| labels of all samples
+samples| vectors consisted of all samples
+data| same as samples(above)
+dataset| an object of class Dataset
+attr| index of single feature
+attrs| indexes of multi features
+
+## 2 to do list \& issues
+
+### 2.0 General
 
 index|name|finished
 -|-|-
 1| 模型类不包括数据集成员对象，而应直接包括数据| √
 2| 使用pandas改写|
 
-### 1 Linear Model
+### 2.1 Linear Model
 
 index|name|finished
 -|-|-
@@ -19,7 +35,7 @@ index|name|finished
 3| Linear Discriminant Analysis| √
 4| Kernel LDA| 
 
-### 2 Decision Tree
+### 2.2 Decision Tree
 
 index|name|finished
 -|-|-
@@ -29,7 +45,7 @@ index|name|finished
 4| 使用pandas提升程序效率|
 5| 决策树可视化|
 
-### 3 Support Vector Machine
+### 2.3 Support Vector Machine
 
 index|name|finished
 -|-|-
