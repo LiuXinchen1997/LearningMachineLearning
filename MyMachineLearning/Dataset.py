@@ -51,7 +51,7 @@ class LabeledDatasetFromFile:
 
 # 仅使用numpy
 class LabeledDataset:
-    def __init__(self, feats, labels, columns=None, feats_values=None, seq_attrs=set()):
+    def __init__(self, feats, labels, feats_values=None, columns=None, seq_attrs=set()):
         self.__feats = feats
         self.__labels = labels
         self.__columns = columns  # 用于存储各列属性的名字（字符串）
@@ -61,7 +61,7 @@ class LabeledDataset:
 
         self.__feats_values = feats_values
         if self.__feats_values is None:
-            self.__feats_values = self.__get_feats_values(self.__feats)
+            self.__feats_values = LabeledDataset.calc_feats_values(self.__feats)
 
     @staticmethod
     def __generate_seq_attrs(feats):
@@ -74,7 +74,7 @@ class LabeledDataset:
         return seq_attrs
 
     @staticmethod
-    def __get_feats_values(feats):
+    def calc_feats_values(feats):
         """
         :return: 获得各个属性的取值集合
         """

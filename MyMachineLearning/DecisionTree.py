@@ -1,3 +1,8 @@
+"""
+命名规则：
+attrs <==> feat indces
+"""
+
 #%%
 import numpy as np
 from MyMachineLearning.Dataset import *
@@ -5,17 +10,23 @@ from MyMachineLearning.Dataset import *
 
 #%%
 class DecisionTree:
-    def __init__(self, dataset):
+    def __init__(self, train_feats, train_labels, feats_values=None, columns=None, seq_attrs=set()):
         """
         feats: nsamples * nfeats
         断言：columns列的名字与feats列的顺序是一一对应的
         """
-        self.__feats, self.__labels = dataset.get_feats_and_labels()
-        self.__nsamples, self.__nfeats = dataset.get_nsamples_and_nfeats()
-        self.__columns = dataset.get_columns()
-        self.__feats_values = dataset.get_feats_values()
-        self.__seq_attrs = dataset.get_seq_attrs()
-        self.__attrs_are_seq = DecisionTree.__get_attrs_are_seq(self.__nfeats, self.__seq_attrs)
+        self.__train_feats = train_feats
+        self.__train_labels = train_labels
+        self.__train_nsamples = train_feats.shape[0]
+        self.__train_nfeats = train_feats.shape[1]
+
+        self.__feats_values = feats_values
+        if self.__feats_values is None:
+            self.__feats_values = LabeledDataset.calc_feats_values(self.__train_feats)
+
+        self.__columns = columns
+        self.__seq_attrs = seq_attrs
+        self.__attrs_are_seq = DecisionTree.__get_attrs_are_seq(self.__train_nfeats, self.__seq_attrs)
         self.__tree = None
 
     @staticmethod
@@ -271,16 +282,16 @@ class DecisionTree:
         return candidate_ts
 
     def __get_feats_and_labels(self):
-        return self.__feats, self.__labels
+        return self.__train_feats, self.__train_labels
 
     def __get_entire_dataset(self):
         feats, labels = self.__get_feats_and_labels()
-        dataset = np.concatenate((feats, labels.reshape((self.__nsamples, 1))), 1)
+        dataset = np.concatenate((feats, labels.reshape((self.__train_nsamples, 1))), 1)
 
         return dataset
 
     def __get_entire_attrs(self):
-        attrs = [i for i in range(self.__nfeats)]
+        attrs = [i for i in range(self.__train_nfeats)]
         return attrs
 
     def __generate_nodes(self, dataset, attrs, mode=1):
@@ -375,11 +386,11 @@ class DecisionTree:
         if self.__tree is None:
             return -1
         accuracy = 0
-        for feat, label in zip(self.__feats, self.__labels):
+        for feat, label in zip(self.__train_feats, self.__train_labels):
             judge = self.pred(feat)
             accuracy += (judge == label)
 
-        error = 1 - accuracy / self.__nsamples
+        error = 1 - accuracy / self.__train_nsamples
         return error
 
     def evaluate_result_with_test_data(self, feats, labels):
@@ -409,8 +420,10 @@ if __name__ == '__main__':
     feats, labels = datasetff.get_feats_and_labels_by_sheet(0, mode=utils.CONSTANT.TRANS)
     dataset = LabeledDataset(feats, labels,
                              columns=['色泽', '根蒂', '敲声', '纹理', '脐部', '触感', '密度', '含糖率'], seq_attrs={6, 7})
-    # print(feats)
-    tree = DecisionTree(dataset)
+
+    train_feats, train_labels = dataset.get_feats_and_labels()
+    tree = DecisionTree(train_feats, train_labels, feats_values=dataset.get_feats_values(),
+                        columns=dataset.get_columns(), seq_attrs=dataset.get_seq_attrs())
 
     # ID3
     print('ID3 algorithm')
