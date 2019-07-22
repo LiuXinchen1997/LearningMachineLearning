@@ -147,11 +147,14 @@ class LabeledTrainAndTestDataset:
         if data.shape[1] - 1 != 2:  # 特征必须是二维才能可视化！
             return
 
+        ind = 0
         for sample in data:
+            plt.text(sample[0], sample[1], ind)
             if sample[-1] == 1:
                 plt.plot(sample[0], sample[1], '+r')
             else:
                 plt.plot(sample[0], sample[1], '*g')
+            ind += 1
 
         plt.show()
 
