@@ -285,6 +285,21 @@ class SupportVectorMachine:
 
         return 1 - correct / self.__train_data.shape[0]
 
+    @staticmethod
+    def __calc_visual_step(data, ratio=0.5):
+        min_ = np.inf
+        for i in range(data.shape[0]):
+            for j in range(data.shape[0]):
+                if j == i:
+                    continue
+                diff = data[i, -3:-1] - data[j, -3:-1]
+                tmp = np.sqrt(np.dot(diff.transpose(), diff))
+                if 0 < tmp < min_:
+                    min_ = tmp
+
+        step = min_ * ratio
+        return step
+
     def visual_data_and_svm_model(self, data, title=''):
         start_time = time.time()
         if data.shape[1] - 1 != 2:  # 特征必须是二维才能可视化！
@@ -302,18 +317,9 @@ class SupportVectorMachine:
         max_x = np.max(data[:, 0])
         min_y = np.min(data[:, 1])
         max_y = np.max(data[:, 1])
-        min_ = np.inf
-        for i in range(data.shape[0]):
-            for j in range(data.shape[0]):
-                if j == i:
-                    continue
-                diff = data[i, -3:-1] - data[j, -3:-1]
-                tmp = np.sqrt(np.dot(diff.transpose(), diff))
-                if 0 < tmp < min_:
-                    min_ = tmp
+        step = self.__calc_visual_step(data, ratio=0.5)
 
         path_points = []
-        step = min_ * 0.5
         cur_x = min_x
         cur_y = min_y
         pre_label = 0
@@ -366,6 +372,59 @@ class SupportVectorMachine:
         end_time = time.time()
         print('cost time for visualization (title: %s) is %d sec.' % (title, end_time - start_time))
 
+    def visual_all_scene_samples_with_labels(self, data, step_ratio=5, title=''):
+        start_time = time.time()
+        if data.shape[1] - 1 != 2:
+            return
+
+        min_x = np.min(data[:, 0])
+        max_x = np.max(data[:, 0])
+        min_y = np.min(data[:, 1])
+        max_y = np.max(data[:, 1])
+        step = self.__calc_visual_step(data, ratio=step_ratio)
+
+        cur_x = min_x
+        cur_y = min_y
+        while cur_x <= max_x:
+            while cur_y <= max_y:
+                label = self.pred(np.array([cur_x, cur_y]))
+                if label == 1:
+                    plt.plot(cur_x, cur_y, '*r')
+                else:
+                    plt.plot(cur_x, cur_y, '*g')
+                cur_y += step
+            cur_x += step
+            cur_y = min_y
+
+        plt.title(title)
+        plt.show()
+        end_time = time.time()
+        print('cost time for visualization (title: %s) is %d sec.' % (title, end_time - start_time))
+
+    def visual_random_samples_with_labels(self, data, vis_nsamples=6000, title=''):
+        start_time = time.time()
+        if data.shape[1] - 1 != 2:
+            return
+
+        min_x = np.min(data[:, 0])
+        max_x = np.max(data[:, 0])
+        min_y = np.min(data[:, 1])
+        max_y = np.max(data[:, 1])
+
+        for i in range(vis_nsamples):
+            x = min_x + (max_x - min_x) * np.random.random()
+            y = min_y + (max_y - min_y) * np.random.random()
+            label = self.pred(np.array([x, y]))
+            if label == 1:
+                plt.plot(x, y, '*r')
+            else:
+                plt.plot(x, y, '*g')
+
+        plt.title(title)
+        plt.show()
+        end_time = time.time()
+        print('cost time for visualization (title: %s) is %d sec.' % (title, end_time - start_time))
+
 
 #%%
 if __name__ == '__main__':
@@ -383,7 +442,7 @@ if __name__ == '__main__':
 
     # 训练模型
     svm = SupportVectorMachine(train_data, test_data, epsilon=0.0001, C=200, kernel_option=('rbf', 1.3))
-    svm.train(epoch=10000)
+    svm.train(epoch=100)
 
     # 预测数据
     print('train dataset error rate %f' % svm.evaluate_train_dataset())
@@ -392,3 +451,5 @@ if __name__ == '__main__':
     # 可视化
     svm.visual_data_and_svm_model(train_data, 'SVM for train data')
     svm.visual_data_and_svm_model(test_data, 'SVM for test data')
+    # svm.visual_all_scene_samples_with_labels(train_data)
+    # svm.visual_random_samples_with_labels(train_data)

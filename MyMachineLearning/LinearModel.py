@@ -30,7 +30,7 @@ class LinearRegression:
         else:
             return 0
 
-    def evaluate_with_train_data(self):
+    def evaluate_train_data(self):
         if self.__omega is None:
             return -1
 
@@ -133,7 +133,7 @@ class LogisticRegression:
         else:
             return 0
 
-    def evaluate_with_train_data(self):
+    def evaluate_train_data(self):
         if self.__beta is None:
             return -1
 
@@ -227,7 +227,7 @@ class LinearDiscriminantAnalysis:
             else:
                 return 0
 
-    def evaluate_with_train_data(self):
+    def evaluate_train_data(self):
         # 训练集和测试集是同一个集合
         if self.__omega is None:
             return -1
@@ -291,7 +291,7 @@ if __name__ == '__main__':
     classifier = LinearRegression(selected_train_data)
     classifier.train()
     classifier.visual_train_data_and_model()
-    error = classifier.evaluate_with_train_data()  # 对于线性不可分的样本，分类性能很差
+    error = classifier.evaluate_train_data()  # 对于线性不可分的样本，分类性能很差
     if error != -1:
         print('Error: ', error * 100, '%')
 
@@ -299,7 +299,7 @@ if __name__ == '__main__':
     print('2. Logistic Regression:')
     classifier2 = LogisticRegression(selected_train_data)
     classifier2.train()
-    error = classifier2.evaluate_with_train_data()
+    error = classifier2.evaluate_train_data()
     if error != -1:
         print('Error: ', error * 100, '%')
 
@@ -308,6 +308,6 @@ if __name__ == '__main__':
     classifier3 = LinearDiscriminantAnalysis(selected_train_data)
     classifier3.train()
     classifier3.visual_train_data_and_lda_model()
-    error = classifier3.evaluate_with_train_data()  # LDA需要应用于线性可分的样本，否则性能会很差
+    error = classifier3.evaluate_train_data()  # LDA需要应用于线性可分的样本，否则性能会很差
     if error != -1:
         print('Error: ', error * 100, '%')

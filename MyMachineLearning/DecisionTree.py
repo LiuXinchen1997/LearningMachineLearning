@@ -377,7 +377,7 @@ class DecisionTree:
         else:
             return self.__dfs_tree(self.__tree, feat)
 
-    def evaluate_result_with_train_data(self):
+    def evaluate_train_data(self):
         if self.__tree is None:
             return -1
         accuracy = 0
@@ -388,7 +388,7 @@ class DecisionTree:
         error = 1 - accuracy / self.__train_nsamples
         return error
 
-    def evaluate_result_with_test_data(self, feats, labels):
+    def evaluate_new_feats_and_labels(self, feats, labels):
         if self.__tree is None:
             return -1
         accuracy = 0
@@ -400,10 +400,10 @@ class DecisionTree:
         error = 1 - accuracy / nsamples
         return error
 
-    def evaluate_result_with_test_data2(self, data):
+    def evaluate_new_data(self, data):
         feats = data[:, :-1]
         labels = data[:, -1]
-        return self.evaluate_result_with_test_data(feats, labels)
+        return self.evaluate_new_feats_and_labels(feats, labels)
 
 
 #%%
@@ -425,18 +425,18 @@ if __name__ == '__main__':
     tree.generate_tree(mode=1)
     nodes = tree.get_tree()
     print(nodes)
-    print(tree.evaluate_result_with_train_data())
+    print(tree.evaluate_train_data())
 
     # C4.5
     print('C4.5 algorithm')
     tree.generate_tree(mode=2)
     nodes = tree.get_tree()
     print(nodes)
-    print(tree.evaluate_result_with_train_data())
+    print(tree.evaluate_train_data())
 
     # CART
     print('CART algorithm')
     tree.generate_tree(mode=3)
     nodes = tree.get_tree()
     print(nodes)
-    print(tree.evaluate_result_with_train_data())
+    print(tree.evaluate_train_data())
