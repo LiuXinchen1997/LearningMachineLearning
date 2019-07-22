@@ -7,6 +7,7 @@ import utils.CONSTANT
 
 
 #%%
+# for regression, not for classification
 class LinearRegression:
     def __init__(self, train_data):
         self.__train_feats = train_data[:, :-1]
@@ -25,40 +26,33 @@ class LinearRegression:
         self.__b = omega[-1][0]
 
     def pred(self, feat):
-        if np.dot(self.__omega.transpose(), feat) + self.__b > 0:
-            return 1
-        else:
-            return 0
+        return np.dot(self.__omega.transpose(), feat) + self.__b
 
     def evaluate_train_data(self):
         if self.__omega is None:
             return -1
 
-        accuracy = 0
+        loss = 0
         for feat, label in zip(self.__train_feats, self.__train_labels):
             judge = self.pred(feat)
-            accuracy += (judge == label)
+            loss += (judge - label) ** 2
 
-        error = 1 - accuracy / self.__train_nsamples
-        return error
+        return loss
 
     def visual_train_data_and_model(self):
-        if self.__train_nfeats != 2:
+        if self.__train_nfeats != 1:
             return
 
         if self.__omega is None or self.__b is None:
             return
 
         for i in range(self.__train_nsamples):
-            if self.__train_labels[i] == 0:
-                plt.plot(self.__train_feats[i, 0], self.__train_feats[i, 1], '+r')
-            else:
-                plt.plot(self.__train_feats[i, 0], self.__train_feats[i, 1], '*g')
+            plt.plot(self.__train_feats[i], self.__train_labels[i], '*r')
 
         min_x = np.min(self.__train_feats[:, 0])
         max_x = np.max(self.__train_feats[:, 0])
-        min_y = (-self.__b - self.__omega[0] * min_x) / self.__omega[1]
-        max_y = (-self.__b - self.__omega[0] * max_x) / self.__omega[1]
+        min_y = np.min(self.__train_labels[:])
+        max_y = np.max(self.__train_labels[:])
         plt.plot([min_x, max_x], [min_y, max_y])
 
         plt.title('Linear Regression')
@@ -288,26 +282,28 @@ if __name__ == '__main__':
 
     # 线性回归
     print('1. Linear Regression:')
-    classifier = LinearRegression(selected_train_data)
-    classifier.train()
-    classifier.visual_train_data_and_model()
-    error = classifier.evaluate_train_data()  # 对于线性不可分的样本，分类性能很差
-    if error != -1:
-        print('Error: ', error * 100, '%')
+    regression_data_address = r'D:\Project\Github\LearningMachineLearning\dataset\salary_data.csv'
+    regrsssion_data = LabeledDatasetFromFile(regression_data_address, datafile_type='csv').get_data_by_sheet(normalization=True)
+    regresser = LinearRegression(regrsssion_data)
+    regresser.train()
+    regresser.visual_train_data_and_model()
+    loss = regresser.evaluate_train_data()  # 对于线性不可分的样本，分类性能很差
+    if loss != -1:
+        print('Loss: ', loss)
 
     # 对数几率回归
     print('2. Logistic Regression:')
-    classifier2 = LogisticRegression(selected_train_data)
-    classifier2.train()
-    error = classifier2.evaluate_train_data()
+    classifier = LogisticRegression(selected_train_data)
+    classifier.train()
+    error = classifier.evaluate_train_data()
     if error != -1:
         print('Error: ', error * 100, '%')
 
     # 线性判别分析
     print('3. Linear Discriminant Analysis:')
-    classifier3 = LinearDiscriminantAnalysis(selected_train_data)
-    classifier3.train()
-    classifier3.visual_train_data_and_lda_model()
-    error = classifier3.evaluate_train_data()  # LDA需要应用于线性可分的样本，否则性能会很差
+    classifier2 = LinearDiscriminantAnalysis(selected_train_data)
+    classifier2.train()
+    classifier2.visual_train_data_and_lda_model()
+    error = classifier2.evaluate_train_data()  # LDA需要应用于线性可分的样本，否则性能会很差
     if error != -1:
         print('Error: ', error * 100, '%')

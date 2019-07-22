@@ -1,7 +1,9 @@
 #%%
 import xlrd
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
+from sklearn.preprocessing import StandardScaler
 
 import utils.CONSTANT
 
@@ -14,34 +16,50 @@ class LabeledDatasetFromFile:
 
         if datafile_type in ['xlsx', 'xls']:
             self.readbook = xlrd.open_workbook(data_address)
+        elif datafile_type == 'csv':
+            self.readbook = pd.read_csv(data_address)
 
-    def get_data_by_sheet(self, index, mode='', feat_indces=None, label_indces=None):
+    def get_data_by_sheet(self, index=0, mode='', feat_indces=None, label_indces=None, normalization=False):
         """
         :param index: index of sheet
         :return: nsamples * nfeats
         """
-        sheet = self.readbook.sheet_by_index(index)
-        nrows = sheet.nrows
-        ncols = sheet.ncols
+        ss = StandardScaler()  # for normalization
+        if self.datafile_type in ['xlsx', 'xls']:
+            sheet = self.readbook.sheet_by_index(index)
+            nrows = sheet.nrows
+            ncols = sheet.ncols
 
-        data = np.zeros((nrows, ncols)).astype(np.float)
-        for i in range(nrows):
-            for j in range(ncols):
-                data[i, j] = sheet.cell(i, j).value
+            data = np.zeros((nrows, ncols)).astype(np.float)
+            for i in range(nrows):
+                for j in range(ncols):
+                    data[i, j] = sheet.cell(i, j).value
 
-        if mode == utils.CONSTANT.TRANS:
-            data = data.transpose()
+            if mode == utils.CONSTANT.TRANS:
+                data = data.transpose()
 
-        nsamples = data.shape[0]
-        if feat_indces is not None and label_indces is not None:
-            feats = data[:, feat_indces]
-            labels = data[:, label_indces]
-            data = np.concatenate((feats, labels.reshape((nsamples, 1))), 1)
+            nsamples = data.shape[0]
+            if feat_indces is not None and label_indces is not None:
+                feats = data[:, feat_indces]
+                labels = data[:, label_indces]
+                data = np.concatenate((feats, labels.reshape((nsamples, 1))), 1)
+            if normalization:
+                data[:, :-1] = ss.fit_transform(data[:, :-1])
 
-        return data
+            return data
+        elif self.datafile_type == 'csv':
+            data = np.array(self.readbook)
+            if feat_indces is not None and label_indces is not None:
+                feats = data[:, feat_indces]
+                labels = data[:, label_indces]
+                data = np.concatenate((feats, labels.reshape((data.shape[0], 1))), 1)
+            if normalization:
+                data[:, :-1] = ss.fit_transform(data[:, :-1])
 
-    def get_feats_and_labels_by_sheet(self, index, mode='', feat_indces=None, label_indces=None):
-        data = self.get_data_by_sheet(index, mode, feat_indces, label_indces)
+            return data
+
+    def get_feats_and_labels_by_sheet(self, index, mode='', feat_indces=None, label_indces=None, normalization=False):
+        data = self.get_data_by_sheet(index, mode, feat_indces, label_indces, normalization=normalization)
         nfeats = data.shape[1]
         feats = data[:, :nfeats - 1]
         labels = data[:, nfeats - 1]
