@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import turtle
 
 import utils.CONSTANT
 from MyMachineLearning.Dataset import LabeledDatasetFromFile, LabeledTrainAndTestDataset
@@ -98,23 +99,104 @@ class Perceptron:
             else:
                 plt.plot(feat[0], feat[1], '+g')
 
-        min_x = np.min(self.__train_feats[:, 0])
-        max_x = np.max(self.__train_feats[:, 0])
-        min_y = (-self.__b - self.__omega[0] * min_x) / self.__omega[1]
-        max_y = (-self.__b - self.__omega[0] * max_x) / self.__omega[1]
-        plt.plot([min_x, max_x], [min_y, max_y])
+        start_x = np.min(self.__train_feats[:, 0])
+        end_x = np.max(self.__train_feats[:, 0])
+        start_y = (-self.__b - self.__omega[0] * start_x) / self.__omega[1]
+        end_y = (-self.__b - self.__omega[0] * end_x) / self.__omega[1]
+        plt.plot([start_x, end_x], [start_y, end_y])
 
         if visual_process:  # visualize several perceptrons in the training process
             for i in range(len(self.__history_omegas)):
                 if i % step != 0:
                     continue
-                min_y = (-self.__history_bs[i] - self.__history_omegas[i][0] * min_x) / self.__history_omegas[i][1]
-                max_y = (-self.__history_bs[i] - self.__history_omegas[i][0] * max_x) / self.__history_omegas[i][1]
-                plt.plot([min_x, max_x], [min_y, max_y])
-                plt.text(max_x, max_y, '%d' % i)
+                if self.__history_omegas[i][1] == 0.:
+                    continue
+                start_y = (-self.__history_bs[i] - self.__history_omegas[i][0] * start_x) / self.__history_omegas[i][1]
+                end_y = (-self.__history_bs[i] - self.__history_omegas[i][0] * end_x) / self.__history_omegas[i][1]
+                plt.plot([start_x, end_x], [start_y, end_y])
+                plt.text(end_x, end_y, '%d' % i)
 
         plt.title('Simple Perceptron')
         plt.show()
+
+    def visual_train_data_and_model_with_turtle(self):
+        # hyper parameters
+        margin_ratio = 0.1
+        radius_ratio = 300.
+        paint_speed = 3
+        step = 120
+
+        if self.__train_nfeats != 2:
+            return
+
+        min_x = np.min(self.__train_feats[:, 0])
+        max_x = np.max(self.__train_feats[:, 0])
+        min_y = np.min(self.__train_feats[:, 1])
+        max_y = np.max(self.__train_feats[:, 1])
+        origin_width = max_x - min_x
+        origin_height = max_y - min_y
+
+        radius = (max_x - min_x) / radius_ratio
+        turtle.setworldcoordinates(min_x - origin_width * margin_ratio,
+                                   min_y - origin_height * margin_ratio,
+                                   max_x + origin_width * margin_ratio,
+                                   max_y + origin_height * margin_ratio)
+        turtle.speed(paint_speed)
+
+        # paint points
+        for feat, label in zip(self.__train_feats, self.__train_labels):
+            if label == 1:
+                turtle.color('red')
+                turtle.penup()
+                turtle.goto(feat[0], feat[1])
+                turtle.pendown()
+                turtle.begin_fill()
+                turtle.fillcolor('red')
+                turtle.circle(radius)
+                turtle.end_fill()
+            else:
+                turtle.color('green')
+                turtle.penup()
+                turtle.goto(feat[0], feat[1])
+                turtle.pendown()
+                turtle.begin_fill()
+                turtle.fillcolor('green')
+                turtle.circle(radius)
+                turtle.end_fill()
+
+        # paint models
+        turtle.color('black')
+        start_x = min_x
+        end_x = max_x
+        for i in range(len(self.__history_omegas)):
+            if i % step != 0:
+                continue
+            if self.__history_omegas[i][1] == 0.:
+                continue
+            start_y = (-self.__history_bs[i] - self.__history_omegas[i][0] * start_x) / self.__history_omegas[i][1]
+            end_y = (-self.__history_bs[i] - self.__history_omegas[i][0] * end_x) / self.__history_omegas[i][1]
+            turtle.penup()
+            turtle.goto(start_x, start_y)
+            turtle.pendown()
+            turtle.goto(end_x, end_y)
+            turtle.penup()
+            turtle.goto((start_x + end_x) / 2., (start_y + end_y) / 2.)
+            turtle.pendown()
+            turtle.write('epoch ' + str(i))
+
+        turtle.color('purple')
+        start_y = (-self.__b - self.__omega[0] * start_x) / self.__omega[1]
+        end_y = (-self.__b - self.__omega[0] * end_x) / self.__omega[1]
+        turtle.penup()
+        turtle.goto(start_x, start_y)
+        turtle.pendown()
+        turtle.goto(end_x, end_y)
+        turtle.penup()
+        turtle.goto((start_x + end_x) / 2., (start_y + end_y) / 2.)
+        turtle.pendown()
+        turtle.write('final model')
+
+        turtle.mainloop()
 
 
 if __name__ == '__main__':
@@ -129,7 +211,8 @@ if __name__ == '__main__':
 
     classifier = Perceptron(linear_separable_data, linear_separable_data, f, epsilon=0.000001)
     classifier.train(max_epoch=1000, learning_rate=0.0001)
-    classifier.visual_train_data_and_model(visual_process=True, step=200)
+    # classifier.visual_train_data_and_model(visual_process=True, step=200)
+    classifier.visual_train_data_and_model_with_turtle()
     error = classifier.evaluate_train_data()
     if error != -1:
         print('error rate: %f' % error)
