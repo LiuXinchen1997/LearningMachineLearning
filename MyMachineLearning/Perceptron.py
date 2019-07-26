@@ -54,6 +54,7 @@ class Perceptron:
         self.__omega = np.zeros((self.__train_nfeats, ))
         # self.__omega = np.random.ranf((self.__train_nfeats, ))
         self.__b = 0.
+        # self.__b = np.random.rand()
 
         for epoch in range(max_epoch):
             print('*** epoch %d ***' % epoch)
@@ -123,7 +124,7 @@ class Perceptron:
         # hyper parameters
         margin_ratio = 0.1
         radius_ratio = 300.
-        paint_speed = 3
+        paint_speed = 5
         step = 120
 
         if self.__train_nfeats != 2:
@@ -210,7 +211,7 @@ if __name__ == '__main__':
     linear_separable_data = train_data[[0, 1, 2, 3, 4, 6, 8, 9, 10, 11, 12, 13, 16], :]
 
     classifier = Perceptron(linear_separable_data, linear_separable_data, f, epsilon=0.000001)
-    classifier.train(max_epoch=1000, learning_rate=0.0001)
+    classifier.train(max_epoch=1000, learning_rate=0.00001)
     # classifier.visual_train_data_and_model(visual_process=True, step=200)
     classifier.visual_train_data_and_model_with_turtle()
     error = classifier.evaluate_train_data()

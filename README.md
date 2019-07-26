@@ -25,6 +25,8 @@ watermelon3| small | classification| no
 demodata| medium | classification| no
 salary_data| small |regression | -
 
+> we can also apply for dataset from sklearn
+
 ## 3 to do list \& issues
 
 ### 3.0 General
@@ -61,3 +63,11 @@ index|name|finished
 2| 多种核函数实现| √
 3| 数据可视化| √
 4| eta >= 0的情况|
+
+### 3.4 Neural Network
+
+index|name|finished
+-|-|-
+1| perceptron| √
+2| visualize with turtle| √
+3| fully connected nn|
