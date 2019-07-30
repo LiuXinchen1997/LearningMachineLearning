@@ -6,7 +6,8 @@ from MyMachineLearning.Dataset import LabeledDatasetFromFile
 
 
 class FullyConnectedNeuralNetwork:
-    def __init__(self, train_data, test_data, activate='sigmoid', num_hidden_layers_nodes=[5]):
+    def __init__(self, train_data, test_data, activate='sigmoid', activate_derivative='sigmoid',
+                 num_hidden_layers_nodes=[5]):
         self.__train_data = np.mat(train_data)
         self.__test_data = np.mat(test_data)
 
@@ -21,6 +22,7 @@ class FullyConnectedNeuralNetwork:
         self.__test_nfeats = self.__test_feats.shape[1]
 
         self.__activate = activate
+        self.__activate_derivative = activate_derivative
 
         self.__num_input_layer_nodes = self.__train_nfeats
         self.__num_output_layer_nodes = len(set(self.__train_labels))
@@ -31,7 +33,7 @@ class FullyConnectedNeuralNetwork:
         self.__bs = []
 
     def __forward_propagation(self, feat):
-        if self.__omegas is [] or self.__bs is []:
+        if (not self.__omegas) or (not self.__bs):
             return -1
 
         # record input and output of every layer
@@ -56,7 +58,7 @@ class FullyConnectedNeuralNetwork:
     @staticmethod
     def __label2vec(label, dim):
         vec = np.zeros((dim, ))
-        vec[label] = 1.
+        vec[int(label)] = 1.
         return np.mat(vec)
 
     def __get_num_all_layers_nodes(self):
@@ -66,7 +68,30 @@ class FullyConnectedNeuralNetwork:
 
         return num_all_layers_nodes
 
-    def train(self, max_epoch=500):
+    def __backward_propagation(self, feat, label, learning_rate):
+        label_vec = self.__label2vec(label, self.__num_output_layer_nodes)
+        _as, _ys = self.__forward_propagation(feat)
+        _deltas = []
+        for ind in reversed(range(len(self.__omegas))):  # layer ind --> layer ind+1
+            derivative = 0.
+            if isinstance(self.__activate_derivative, str):
+                if 'sigmoid' == self.__activate_derivative:
+                    derivative = utils.CALC_FUNCTIONS.sigmoid_derivative(_as[ind + 1])
+            elif isinstance(self.__activate_derivative, types.FunctionType):
+                derivative = self.__activate_derivative(_as[ind + 1])
+
+            if not _deltas:  # if _deltas is not a []
+                delta = np.multiply((_ys[ind + 1] - label_vec), derivative)
+            else:
+                delta = np.multiply(_deltas[-1] * self.__omegas[ind + 1].T, derivative)
+
+            _delta_omega = _ys[ind].T * delta
+            self.__omegas[ind] -= learning_rate * _delta_omega
+            _delta_b = delta
+            self.__bs[ind] -= learning_rate * _delta_b
+            _deltas.append(delta)
+
+    def train(self, max_epoch=500, learning_rate=0.001):
         # init parameters
         for i in range(len(self.__num_hidden_layers_nodes)):
             if 0 == i:
@@ -83,20 +108,12 @@ class FullyConnectedNeuralNetwork:
         while cur_epoch <= max_epoch:
             for (feat, label) in zip(self.__train_feats, self.__train_labels):
                 # backward propagation
-                label_vec = self.__label2vec(label, self.__num_output_layer_nodes)
-                _as, _ys = self.__forward_propagation(feat)
-                _deltas = None
-                for ind in reversed(range(len(self.__omegas))):  # layer ind --> layer ind+1
-                    _delta_omegas = np.zeros(self.__omegas[ind].shape)
-                    if _deltas is None:
-                        (_ys[ind] - label_vec)
-
-                    self.__omegas[ind]
+                self.__backward_propagation(feat, label, learning_rate)
 
             cur_epoch += 1
 
     def pred(self, feat):
-        if self.__omegas is [] or self.__bs is []:
+        if (not self.__omegas) or (not self.__bs):
             return -1
 
         # forward propagation
@@ -127,6 +144,6 @@ if __name__ == '__main__':
     train_data[train_data[:, 2] == -1, 2] = 0.  # preprocess
     train_data.astype(np.float)
 
-    classifier = FullyConnectedNeuralNetwork(train_data, test_data=train_data, num_hidden_layers_nodes=[5, 4, 3])
+    classifier = FullyConnectedNeuralNetwork(train_data, test_data=train_data, num_hidden_layers_nodes=[5, 4])
     classifier.train()
     print(classifier.evaluate_test_dataset())
