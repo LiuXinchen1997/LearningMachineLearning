@@ -69,5 +69,6 @@ index|name|finished
 -|-|-
 1| perceptron| √
 2| visualize with turtle| √
-3| fully connected nn|
-4| visualize fcnn|
+3| fully connected nn| √
+4| improve classification performance|
+5| visualize fcnn|
