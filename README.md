@@ -70,5 +70,8 @@ index|name|finished
 1| perceptron| √
 2| visualize with turtle| √
 3| fully connected nn| √
-4| improve classification performance|
-5| visualize fcnn|
+4| improve classification performance| √
+5| visualize classification result of fcnn|
+6| visualize training loss|
+7| visualize network architecture with turtle|
+8| save and load parameter interface|

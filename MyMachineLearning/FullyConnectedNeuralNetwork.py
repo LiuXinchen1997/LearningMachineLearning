@@ -1,5 +1,6 @@
 import numpy as np
 import types
+import time
 
 import utils.CALC_FUNCTIONS
 import utils.CONSTANT
@@ -9,11 +10,11 @@ from MyMachineLearning.Dataset import LabeledDatasetFromFile
 class FullyConnectedNeuralNetwork:
     def __init__(self, train_data, test_data, activate='sigmoid', activate_derivative='sigmoid',
                  num_hidden_layers_nodes=[5]):
-        self.__train_data = np.mat(train_data)
-        self.__test_data = np.mat(test_data)
+        self.__train_data = train_data  # attention: not np.matrix!
+        self.__test_data = test_data
 
-        self.__train_feats = train_data[:, :-1]
-        self.__train_labels = train_data[:, -1]
+        self.__train_feats = self.__train_data[:, :-1]
+        self.__train_labels = self.__train_data[:, -1]
         self.__train_nsamples = self.__train_feats.shape[0]
         self.__train_nfeats = self.__train_feats.shape[1]
 
@@ -120,19 +121,42 @@ class FullyConnectedNeuralNetwork:
     def __calc_loss(output, label):
         return np.squeeze(0.5 * ((output - label) ** 2))
 
-    def train(self, max_epoch=500, learning_rate=0.001):
+    def __sampling_for_training(self, sampling_mode, mini_batch_size=0.4):
+        np.random.shuffle(self.__train_data)
+        self.__train_feats = self.__train_data[:, :-1]
+        self.__train_labels = self.__train_data[:, -1]
+        if 'batch' == sampling_mode or sampling_mode.startswith('b'):
+            train_feats_one_epoch = self.__train_feats.copy()
+            train_labels_one_epoch = self.__train_labels.copy()
+        elif 'stochastic' == sampling_mode or sampling_mode.startswith('s'):
+            train_feats_one_epoch = self.__train_feats[:1, :].copy()
+            train_labels_one_epoch = self.__train_labels[:1].copy()
+        elif 'mini-batch' == sampling_mode or sampling_mode.startswith('m'):
+            if isinstance(mini_batch_size, float):
+                mini_batch_size = int(self.__train_nsamples * mini_batch_size)
+            elif mini_batch_size > self.__train_nsamples:
+                mini_batch_size = self.__train_nsamples
+            train_feats_one_epoch = self.__train_feats[:mini_batch_size, :].copy()
+            train_labels_one_epoch = self.__train_labels[:mini_batch_size].copy()
+        else:
+            raise Exception('wrong sampling mode.')
+
+        return train_feats_one_epoch, train_labels_one_epoch
+
+    def train(self, max_epoch=20000, learning_rate=0.001, sampling_mode='batch', mini_batch_size=0.4):
+        """
+        :param sampling_mode: mode of sampling, including 'batch', 'stochastic' and 'mini-batch'.
+        """
+        start_time = time.time()
+
         # init parameters
         self.__init_parameters()
         self.__print_parameters()
 
         cur_epoch = 0
         while cur_epoch < max_epoch:
-            np.random.shuffle(self.__train_feats)
-            np.random.shuffle(self.__train_labels)
-            train_feats_one_epoch = self.__train_feats[:1, :]
-            train_labels_one_epoch = self.__train_labels[:1]
-            train_feats_one_epoch = self.__train_feats.copy()
-            train_labels_one_epoch = self.__train_labels.copy()
+            train_feats_one_epoch, train_labels_one_epoch = \
+                self.__sampling_for_training(sampling_mode=sampling_mode, mini_batch_size=mini_batch_size)
 
             loss = 0.
             for (feat, label) in zip(train_feats_one_epoch, train_labels_one_epoch):
@@ -142,10 +166,15 @@ class FullyConnectedNeuralNetwork:
                 # calculate loss
                 loss += self.__calc_loss(self.pred(feat), label)
 
-            print("epoch {} / {} loss: {}".format(cur_epoch + 1, max_epoch, loss / train_labels_one_epoch.shape[0]))
+            print("epoch {} / {} loss: {}".format(cur_epoch + 1, max_epoch, loss / train_feats_one_epoch.shape[0]))
+            if loss <= utils.CONSTANT.DEFAULT_ZERO_PRECISION:
+                break
             cur_epoch += 1
 
         self.__print_parameters()
+
+        end_time = time.time()
+        print("cost time for training: {} seconds.".format(end_time - start_time))
 
     def pred(self, feat):
         if (not self.__omegas) or (not self.__bs):
@@ -169,14 +198,14 @@ class FullyConnectedNeuralNetwork:
 
 
 if __name__ == '__main__':
-    data_address = r'D:\Project\Github\LearningMachineLearning\dataset\watermelon3.xlsx'
-    train_data = LabeledDatasetFromFile(data_address).get_data_by_sheet(0, mode=utils.CONSTANT.TRANS)
+    data_address = r'D:\Project\Github\LearningMachineLearning\dataset\demodata.xls'
+    train_data = LabeledDatasetFromFile(data_address).get_data_by_sheet(0)
     train_data[train_data[:, 2] == -1, 2] = 0.  # preprocess
-    train_data = train_data[:, -3:]
+    # train_data = train_data[:, -3:] # step for watermelon dataset
     train_data.astype(np.float)
     np.random.shuffle(train_data)
 
-    classifier = FullyConnectedNeuralNetwork(train_data, test_data=train_data,
-                                             num_hidden_layers_nodes=[4], activate='tanh', activate_derivative='tanh')
-    classifier.train(max_epoch=500, learning_rate=0.01)
+    classifier = FullyConnectedNeuralNetwork(train_data[:100, :], test_data=train_data[100:, :],
+                                             num_hidden_layers_nodes=[6], activate='tanh', activate_derivative='tanh')
+    classifier.train(max_epoch=20000, learning_rate=0.0001)
     print('error rate: {}'.format(classifier.evaluate_test_dataset()))
