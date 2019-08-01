@@ -6,6 +6,7 @@ import os
 import utils.CALC_FUNCTIONS
 import utils.CONSTANT
 from MyMachineLearning.Dataset import LabeledDatasetFromFile
+from utils import Visualization
 
 
 class FullyConnectedNeuralNetwork:
@@ -52,6 +53,12 @@ class FullyConnectedNeuralNetwork:
         self.__bs = []
 
         self.MODEL_NAME = './generated/model.para'
+
+    def get_train_data(self):
+        return self.__train_data
+
+    def get_test_data(self):
+        return self.__test_data
 
     def __forward_propagation(self, feat):
         if (not self.__omegas) or (not self.__bs):
@@ -199,6 +206,14 @@ class FullyConnectedNeuralNetwork:
 
         return 1 - correct / self.__test_nsamples
 
+    def evaluate_train_dataset(self):
+        correct = 0
+        for (feat, label) in zip(self.__train_feats, self.__train_labels):
+            judge = self.pred(feat)
+            correct += (judge == label)
+
+        return 1 - correct / self.__train_nsamples
+
     def save_model(self, filename=None):
         if (not self.__omegas) or (not self.__bs):
             return
@@ -255,6 +270,25 @@ class FullyConnectedNeuralNetwork:
                     b[0, j] = float(eles[j])
                 self.__bs.append(b)
 
+    # visualization
+    def visualize_train_data_and_model(self):
+        cost_time = Visualization.visualize_data_and_model(self.__train_data, self, title='FCNN for train dataset')
+        return cost_time
+
+    def visualize_test_data_and_model(self):
+        cost_time = Visualization.visualize_data_and_model(self.__test_data, self, title='FCNN for test dataset')
+        return cost_time
+
+    def visualize_all_scene_samples_with_labels(self):
+        cost_time = Visualization.visualize_all_scene_samples_with_labels(self.__train_data, self, step_ratio=2,
+                                                                          title='FCNN for all scene samples')
+        return cost_time
+
+    def visualize_random_samples_with_labels(self):
+        cost_time = Visualization.visualize_random_samples_with_labels(self.__train_data, self,
+                                                                       title='FCNN for random samples')
+        return cost_time
+
 
 if __name__ == '__main__':
     data_address = r'D:\Project\Github\LearningMachineLearning\dataset\demodata.xls'
@@ -269,4 +303,14 @@ if __name__ == '__main__':
     # classifier.train(max_epoch=20000, learning_rate=0.0001)
     # classifier.save_model()
     classifier.load_model()
-    print('error rate: {}'.format(classifier.evaluate_test_dataset()))
+    print('error rate of test dataset: {}'.format(classifier.evaluate_test_dataset()))
+    print('error rate of train dataset: {}'.format(classifier.evaluate_train_dataset()))
+
+    cost_time = classifier.visualize_train_data_and_model()
+    print('cost time for visualization (for train dataset) is %d sec.' % cost_time)
+    cost_time = classifier.visualize_test_data_and_model()
+    print('cost time for visualization (for test dataset) is %d sec.' % cost_time)
+    cost_time = classifier.visualize_all_scene_samples_with_labels()
+    print('cost time for visualization (FCNN for all scene samples) is %d sec.' % cost_time)
+    cost_time = classifier.visualize_random_samples_with_labels()
+    print('cost time for visualization (FCNN for random samples) is %d sec.' % cost_time)

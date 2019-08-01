@@ -300,7 +300,7 @@ class SupportVectorMachine:
         step = min_ * ratio
         return step
 
-    def visual_data_and_svm_model(self, data, title=''):
+    def visualize_data_and_svm_model(self, data, title=''):
         start_time = time.time()
         if data.shape[1] - 1 != 2:  # 特征必须是二维才能可视化！
             return
@@ -372,7 +372,7 @@ class SupportVectorMachine:
         end_time = time.time()
         print('cost time for visualization (title: %s) is %d sec.' % (title, end_time - start_time))
 
-    def visual_all_scene_samples_with_labels(self, data, step_ratio=5, title=''):
+    def visualize_all_scene_samples_with_labels(self, data, step_ratio=5, title=''):
         start_time = time.time()
         if data.shape[1] - 1 != 2:
             return
@@ -401,7 +401,7 @@ class SupportVectorMachine:
         end_time = time.time()
         print('cost time for visualization (title: %s) is %d sec.' % (title, end_time - start_time))
 
-    def visual_random_samples_with_labels(self, data, vis_nsamples=6000, title=''):
+    def visualize_random_samples_with_labels(self, data, vis_nsamples=6000, title=''):
         start_time = time.time()
         if data.shape[1] - 1 != 2:
             return
@@ -449,7 +449,7 @@ if __name__ == '__main__':
     print('test dataset error rate %f' % svm.evaluate_test_dataset())
 
     # 可视化
-    svm.visual_data_and_svm_model(train_data, 'SVM for train data')
-    svm.visual_data_and_svm_model(test_data, 'SVM for test data')
-    # svm.visual_all_scene_samples_with_labels(train_data)
-    # svm.visual_random_samples_with_labels(train_data)
+    svm.visualize_data_and_svm_model(train_data, 'SVM for train data')
+    svm.visualize_data_and_svm_model(test_data, 'SVM for test data')
+    # svm.visualize_all_scene_samples_with_labels(train_data)
+    # svm.visualize_random_samples_with_labels(train_data)
