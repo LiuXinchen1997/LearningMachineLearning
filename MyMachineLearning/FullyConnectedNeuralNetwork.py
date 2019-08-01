@@ -1,6 +1,7 @@
 import numpy as np
 import types
 import time
+import os
 
 import utils.CALC_FUNCTIONS
 import utils.CONSTANT
@@ -49,6 +50,8 @@ class FullyConnectedNeuralNetwork:
         # parameters of FCNN
         self.__omegas = []
         self.__bs = []
+
+        self.MODEL_NAME = './generated/model.para'
 
     def __forward_propagation(self, feat):
         if (not self.__omegas) or (not self.__bs):
@@ -196,6 +199,62 @@ class FullyConnectedNeuralNetwork:
 
         return 1 - correct / self.__test_nsamples
 
+    def save_model(self, filename=None):
+        if (not self.__omegas) or (not self.__bs):
+            return
+
+        if filename is not None:
+            self.MODEL_NAME = filename
+
+        with open(self.MODEL_NAME, 'w') as file:
+            file.write(str(len(self.__omegas)) + '\n')
+            for omega in self.__omegas:
+                nrows = omega.shape[0]
+                ncols = omega.shape[1]
+                file.write(str(nrows) + ' ' + str(ncols) + '\n')
+                for i in range(nrows):
+                    for j in range(ncols):
+                        file.write(str(omega[i, j]) + ' ')
+                    file.write('\n')
+
+            file.write(str(len(self.__bs)) + '\n')
+            for b in self.__bs:
+                nlens = b.shape[1]
+                file.write(str(nlens) + '\n')
+                for i in range(nlens):
+                    file.write(str(b[0, i]) + ' ')
+                file.write('\n')
+
+    def load_model(self, filename=None):
+        if filename is None:
+            filename = self.MODEL_NAME
+
+        if not os.path.exists(filename):
+            raise Exception('model parameter file does not exist.')
+
+        with open(filename, 'r') as file:
+            nomegas = int(file.readline().strip())
+            for i in range(nomegas):
+                eles = file.readline().strip().split(' ')
+                nrows = int(eles[0])
+                ncols = int(eles[1])
+                omega = np.mat(np.zeros((nrows, ncols), dtype=np.float))
+                for j in range(nrows):
+                    eles = file.readline().strip().split(' ')
+                    for k in range(ncols):
+                        omega[j, k] = float(eles[k])
+                self.__omegas.append(omega)
+
+            nbs = int(file.readline().strip())
+            for i in range(nbs):
+                eles = file.readline().strip()
+                nlens = int(eles)
+                b = np.mat(np.zeros((nlens, ), dtype=np.float))
+                eles = file.readline().strip().split(' ')
+                for j in range(nlens):
+                    b[0, j] = float(eles[j])
+                self.__bs.append(b)
+
 
 if __name__ == '__main__':
     data_address = r'D:\Project\Github\LearningMachineLearning\dataset\demodata.xls'
@@ -207,5 +266,7 @@ if __name__ == '__main__':
 
     classifier = FullyConnectedNeuralNetwork(train_data[:100, :], test_data=train_data[100:, :],
                                              num_hidden_layers_nodes=[6], activate='tanh', activate_derivative='tanh')
-    classifier.train(max_epoch=20000, learning_rate=0.0001)
+    # classifier.train(max_epoch=20000, learning_rate=0.0001)
+    # classifier.save_model()
+    classifier.load_model()
     print('error rate: {}'.format(classifier.evaluate_test_dataset()))
