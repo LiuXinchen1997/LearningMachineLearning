@@ -23,14 +23,14 @@ def visualize_data_and_model(data, model, title=''):
     if data.shape[1] - 1 != 2:  # 特征必须是二维才能可视化！
         return
 
-    # 绘制样本点
+    # print sample points
     for sample in data:
         if sample[-1] == 1:
             plt.plot(sample[0], sample[1], '+r')
         else:
             plt.plot(sample[0], sample[1], '*g')
 
-    # 绘制SVM
+    # print model
     min_x = np.min(data[:, 0])
     max_x = np.max(data[:, 0])
     min_y = np.min(data[:, 1])
@@ -40,12 +40,12 @@ def visualize_data_and_model(data, model, title=''):
     path_points = []
     cur_x = min_x
     cur_y = min_y
-    pre_label = 0
+    pre_label = None
     pre_x = pre_y = 0
     while cur_x <= max_x:
         while cur_y <= max_y:
             cur_label = model.pred(np.array([cur_x, cur_y]))
-            if pre_label != 0 and pre_label != cur_label:
+            if (pre_label is not None) and (pre_label != cur_label):
                 path_points.append([(cur_x + pre_x) / 2., (cur_y + pre_y) / 2.])
             pre_label = cur_label
             pre_x = cur_x

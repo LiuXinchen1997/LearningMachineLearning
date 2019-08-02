@@ -2,6 +2,7 @@ import numpy as np
 import types
 import time
 import os
+from matplotlib import pyplot as plt
 
 import utils.CALC_FUNCTIONS
 import utils.CONSTANT
@@ -52,7 +53,8 @@ class FullyConnectedNeuralNetwork:
         self.__omegas = []
         self.__bs = []
 
-        self.MODEL_NAME = './generated/model.para'
+        self.__MODEL_NAME = './generated/model.para'
+        self.__history_loss = []
 
     def get_train_data(self):
         return self.__train_data
@@ -158,6 +160,7 @@ class FullyConnectedNeuralNetwork:
         :param sampling_mode: mode of sampling, including 'batch', 'stochastic' and 'mini-batch'.
         """
         start_time = time.time()
+        self.__history_loss = []
 
         # init parameters
         self.__init_parameters()
@@ -177,8 +180,14 @@ class FullyConnectedNeuralNetwork:
                 loss += self.__calc_loss(self.pred(feat), label)
 
             print("epoch {} / {} loss: {}".format(cur_epoch + 1, max_epoch, loss / train_feats_one_epoch.shape[0]))
+            self.__history_loss.append(loss)
             if loss <= utils.CONSTANT.DEFAULT_ZERO_PRECISION:
                 break
+
+            # record model parameters during training for visualization
+            if cur_epoch % 50 == 0:
+                self.save_model(filename='./generated/model_' + str(cur_epoch) + '.para')
+
             cur_epoch += 1
 
         self.__print_parameters()
@@ -219,9 +228,9 @@ class FullyConnectedNeuralNetwork:
             return
 
         if filename is not None:
-            self.MODEL_NAME = filename
+            self.__MODEL_NAME = filename
 
-        with open(self.MODEL_NAME, 'w') as file:
+        with open(self.__MODEL_NAME, 'w') as file:
             file.write(str(len(self.__omegas)) + '\n')
             for omega in self.__omegas:
                 nrows = omega.shape[0]
@@ -242,12 +251,14 @@ class FullyConnectedNeuralNetwork:
 
     def load_model(self, filename=None):
         if filename is None:
-            filename = self.MODEL_NAME
+            filename = self.__MODEL_NAME
 
         if not os.path.exists(filename):
             raise Exception('model parameter file does not exist.')
 
         with open(filename, 'r') as file:
+            self.__omegas = []
+            self.__bs = []
             nomegas = int(file.readline().strip())
             for i in range(nomegas):
                 eles = file.readline().strip().split(' ')
@@ -275,12 +286,35 @@ class FullyConnectedNeuralNetwork:
         cost_time = Visualization.visualize_data_and_model(self.__train_data, self, title='FCNN for train dataset')
         return cost_time
 
+    def visualize_train_data_and_several_models(self):
+        cost_time = 0.
+        if os.path.exists('./generated/model_50.para'):
+            self.load_model(filename='./generated/model_50.para')
+            cost_time += Visualization.visualize_data_and_model(self.__train_data, self,
+                                                                title='FCNN for train dataset: epoch 50')
+
+        if os.path.exists('./generated/model_100.para'):
+            self.load_model(filename='./generated/model_100.para')
+            cost_time += Visualization.visualize_data_and_model(self.__train_data, self,
+                                                                title='FCNN for train dataset: epoch 100')
+
+        if os.path.exists('./generated/model_150.para'):
+            self.load_model(filename='./generated/model_150.para')
+            cost_time += Visualization.visualize_data_and_model(self.__train_data, self,
+                                                                title='FCNN for train dataset: epoch 150')
+
+        self.load_model()
+        cost_time += Visualization.visualize_data_and_model(self.__train_data, self,
+                                                            title='FCNN for train dataset')
+
+        return cost_time
+
     def visualize_test_data_and_model(self):
         cost_time = Visualization.visualize_data_and_model(self.__test_data, self, title='FCNN for test dataset')
         return cost_time
 
     def visualize_all_scene_samples_with_labels(self):
-        cost_time = Visualization.visualize_all_scene_samples_with_labels(self.__train_data, self, step_ratio=2,
+        cost_time = Visualization.visualize_all_scene_samples_with_labels(self.__train_data, self, step_ratio=5,
                                                                           title='FCNN for all scene samples')
         return cost_time
 
@@ -288,6 +322,31 @@ class FullyConnectedNeuralNetwork:
         cost_time = Visualization.visualize_random_samples_with_labels(self.__train_data, self,
                                                                        title='FCNN for random samples')
         return cost_time
+
+    def visualize_train_loss(self, step=0.05):
+        if not self.__history_loss:
+            return
+
+        plt.xlabel('epoch')
+        plt.ylabel('loss')
+
+        points = []
+        for i in range(len(self.__history_loss)):
+            if isinstance(step, int):
+                if i % step != 0:
+                    continue
+            else:
+                if i % int(len(self.__history_loss) * step) != 0:
+                    continue
+
+            plt.plot(i, self.__history_loss[i], '*r')
+            points.append([i, self.__history_loss[i]])
+
+        for i in range(len(points) - 1):
+            plt.plot([points[i][0], points[i+1][0]], [points[i][1], points[i+1][1]], 'b')
+
+        plt.title('train loss')
+        plt.show()
 
 
 if __name__ == '__main__':
@@ -300,13 +359,15 @@ if __name__ == '__main__':
 
     classifier = FullyConnectedNeuralNetwork(train_data[:100, :], test_data=train_data[100:, :],
                                              num_hidden_layers_nodes=[6], activate='tanh', activate_derivative='tanh')
-    # classifier.train(max_epoch=20000, learning_rate=0.0001)
-    # classifier.save_model()
+    classifier.train(max_epoch=2000, learning_rate=0.01)
+    classifier.visualize_train_loss()
+    classifier.save_model()
     classifier.load_model()
     print('error rate of test dataset: {}'.format(classifier.evaluate_test_dataset()))
     print('error rate of train dataset: {}'.format(classifier.evaluate_train_dataset()))
 
-    cost_time = classifier.visualize_train_data_and_model()
+    # cost_time = classifier.visualize_train_data_and_model()
+    cost_time = classifier.visualize_train_data_and_several_models()
     print('cost time for visualization (for train dataset) is %d sec.' % cost_time)
     cost_time = classifier.visualize_test_data_and_model()
     print('cost time for visualization (for test dataset) is %d sec.' % cost_time)
