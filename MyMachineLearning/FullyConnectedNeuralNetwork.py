@@ -2,6 +2,7 @@ import numpy as np
 import types
 import time
 import os
+import turtle
 from matplotlib import pyplot as plt
 
 import utils.CALC_FUNCTIONS
@@ -348,6 +349,57 @@ class FullyConnectedNeuralNetwork:
         plt.title('train loss')
         plt.show()
 
+    def visualize_network_with_turtle(self):
+        # hyper parameters
+        width = 400
+        height = 400
+        node_radius = 10
+
+        num_all_layers = self.__get_num_all_layers_nodes()
+
+        turtle.setworldcoordinates(0, 0, width, height)
+        layers_nodes = []
+        width_step = width / float(len(num_all_layers) + 1)
+
+        # print nodes
+        for i in range(len(num_all_layers)):
+            num_cur_layer = num_all_layers[i]
+            height_step = height / float(num_cur_layer + 1)
+            layer_nodes = []
+            for j in range(num_cur_layer):
+                pos_x = width_step * (i+1)
+                pos_y = height_step * (j+1)
+                layer_nodes.append([pos_x, pos_y])
+
+                turtle.penup()
+                turtle.goto(pos_x, pos_y)
+                turtle.pendown()
+                turtle.begin_fill()
+                if 0 == i:
+                    turtle.color('red')
+                    turtle.fillcolor('red')
+                elif len(num_all_layers) - 1 == i:
+                    turtle.color('blue')
+                    turtle.fillcolor('blue')
+                else:
+                    turtle.color('green')
+                    turtle.fillcolor('green')
+                turtle.circle(node_radius)
+                turtle.end_fill()
+            layers_nodes.append(layer_nodes)
+
+        # print links
+        turtle.color('black')
+        for i in range(len(layers_nodes)-1):
+            for j in range(num_all_layers[i]):
+                for k in range(num_all_layers[i+1]):
+                    turtle.penup()
+                    turtle.goto(layers_nodes[i][j][0] + node_radius, layers_nodes[i][j][1] + node_radius)
+                    turtle.pendown()
+                    turtle.goto(layers_nodes[i+1][k][0] - node_radius, layers_nodes[i+1][k][1] + node_radius)
+
+        turtle.mainloop()
+
 
 if __name__ == '__main__':
     data_address = r'D:\Project\Github\LearningMachineLearning\dataset\demodata.xls'
@@ -375,3 +427,5 @@ if __name__ == '__main__':
     print('cost time for visualization (FCNN for all scene samples) is %d sec.' % cost_time)
     cost_time = classifier.visualize_random_samples_with_labels()
     print('cost time for visualization (FCNN for random samples) is %d sec.' % cost_time)
+
+    # classifier.visualize_network_with_turtle()

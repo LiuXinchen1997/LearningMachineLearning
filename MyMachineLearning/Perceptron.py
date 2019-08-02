@@ -5,6 +5,7 @@ import turtle
 import utils.CONSTANT
 from MyMachineLearning.Dataset import LabeledDatasetFromFile, LabeledTrainAndTestDataset
 
+
 # Just for linear separable dataset
 class Perceptron:
     @staticmethod
@@ -87,7 +88,7 @@ class Perceptron:
 
         return 1 - accuracy / self.__train_nsamples
 
-    def visual_train_data_and_model(self, visual_process=False, step=80):
+    def visualize_train_data_and_model(self, visual_process=False, step=80):
         if self.__train_nfeats != 2:
             return
 
@@ -120,7 +121,7 @@ class Perceptron:
         plt.title('Simple Perceptron')
         plt.show()
 
-    def visual_train_data_and_model_with_turtle(self):
+    def visualize_train_data_and_model_with_turtle(self):
         # hyper parameters
         margin_ratio = 0.1
         radius_ratio = 300.
@@ -213,7 +214,7 @@ if __name__ == '__main__':
     classifier = Perceptron(linear_separable_data, linear_separable_data, f, epsilon=0.000001)
     classifier.train(max_epoch=1000, learning_rate=0.00001)
     # classifier.visual_train_data_and_model(visual_process=True, step=200)
-    classifier.visual_train_data_and_model_with_turtle()
+    classifier.visualize_train_data_and_model_with_turtle()
     error = classifier.evaluate_train_data()
     if error != -1:
         print('error rate: %f' % error)
