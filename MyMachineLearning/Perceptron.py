@@ -205,7 +205,7 @@ if __name__ == '__main__':
     def f(x):
         return 1 if x > 0 else 0
 
-    data_address = r'D:\Project\Github\LearningMachineLearning\dataset\watermelon3.xlsx'
+    data_address = r'..\dataset\watermelon3.xlsx'
     datasetff = LabeledDatasetFromFile(data_address).get_data_by_sheet(0, mode=utils.CONSTANT.TRANS)
     datasetff.astype(np.float)
     train_data = datasetff[:, -3:]  # 只使用连续属性值

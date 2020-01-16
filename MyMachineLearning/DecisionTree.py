@@ -410,7 +410,7 @@ class DecisionTree:
 if __name__ == '__main__':
     import utils.CONSTANT
 
-    data_address = r'D:\Project\Github\LearningMachineLearning\dataset\watermelon3.xlsx'
+    data_address = r'..\dataset\watermelon3.xlsx'
     datasetff = LabeledDatasetFromFile(data_address)
     feats, labels = datasetff.get_feats_and_labels_by_sheet(0, mode=utils.CONSTANT.TRANS)
     dataset = LabeledDataset(feats, labels,

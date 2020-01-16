@@ -73,5 +73,6 @@ index|name|finished
 4| improve classification performance| √
 5| visualize classification result of fcnn| √
 6| visualize training loss| √
-7| visualize network architecture with turtle|
+7| visualize network architecture with turtle| √
 8| save and load parameter interface| √
+9| implement NN with OO style|
