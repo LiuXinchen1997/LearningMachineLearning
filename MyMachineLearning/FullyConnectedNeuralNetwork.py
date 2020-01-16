@@ -402,7 +402,7 @@ class FullyConnectedNeuralNetwork:
 
 
 if __name__ == '__main__':
-    data_address = r'D:\Project\Github\LearningMachineLearning\dataset\demodata.xls'
+    data_address = r'..\dataset\demodata.xls'
     train_data = LabeledDatasetFromFile(data_address).get_data_by_sheet(0)
     train_data[train_data[:, 2] == -1, 2] = 0.  # preprocess
     # train_data = train_data[:, -3:] # step for watermelon dataset
@@ -428,4 +428,4 @@ if __name__ == '__main__':
     cost_time = classifier.visualize_random_samples_with_labels()
     print('cost time for visualization (FCNN for random samples) is %d sec.' % cost_time)
 
-    # classifier.visualize_network_with_turtle()
+    classifier.visualize_network_with_turtle()

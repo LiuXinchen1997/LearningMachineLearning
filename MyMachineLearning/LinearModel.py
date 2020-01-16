@@ -273,7 +273,7 @@ class LinearDiscriminantAnalysis:
 
 #%%
 if __name__ == '__main__':
-    data_address = r'D:\Project\Github\LearningMachineLearning\dataset\watermelon3.xlsx'
+    data_address = r'..\dataset\watermelon3.xlsx'
     datasetff = LabeledDatasetFromFile(data_address)
     entire_train_data = datasetff.get_data_by_sheet(0, mode=utils.CONSTANT.TRANS)
     entire_train_data.astype(np.float)
