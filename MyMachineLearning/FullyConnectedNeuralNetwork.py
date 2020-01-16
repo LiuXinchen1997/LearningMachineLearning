@@ -428,4 +428,4 @@ if __name__ == '__main__':
     cost_time = classifier.visualize_random_samples_with_labels()
     print('cost time for visualization (FCNN for random samples) is %d sec.' % cost_time)
 
-    # classifier.visualize_network_with_turtle()
+    classifier.visualize_network_with_turtle()
