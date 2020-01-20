@@ -3,6 +3,7 @@ import numpy as np
 from utils.CALC_FUNCTIONS import sigmoid, sigmoid_derivative
 from MyMachineLearning.Dataset import LabeledDatasetFromFile
 
+
 class Node:
     def __init__(self, activate, activate_derivative, in_val=None, is_input_node=False):
         self.activate = activate
@@ -214,6 +215,32 @@ class FullyConnectedNeuralNetwork2:
             print(end='\n')
 
 
+def construct_network(num_layers_nodes, train_data, test_data, activate, activate_derivative):
+    """
+    :param num_layers_nodes: a list of the number of several layers
+    :return: object of FullyConnectedNeuralNetwork2
+    """
+    if len(num_layers_nodes) < 2:
+        raise Exception("The number of layers is at least 2.")
+
+    layers = []
+    for i in range(len(num_layers_nodes)):
+        num_layer_nodes = num_layers_nodes[i]
+        nodes = []
+        for _ in range(num_layer_nodes):
+            if i == 0:
+                nodes.append(Node(activate, activate_derivative, is_input_node=True))
+            else:
+                nodes.append(Node(activate, activate_derivative))
+        layer = Layer(nodes)
+        layers.append(layer)
+
+    for i in range(len(layers) - 1):
+        layers[i].set_next_layer(layers[i+1])
+
+    return FullyConnectedNeuralNetwork2(layers, train_data, test_data)
+
+
 if __name__ == '__main__':
     data_address = r'..\dataset\demodata.xls'
     data = LabeledDatasetFromFile(data_address).get_data_by_sheet(0)
@@ -223,29 +250,6 @@ if __name__ == '__main__':
     train_data = data[:100, :]
     test_data = data[100:, :]
 
-    nodes1 = []
-    for i in range(2):
-        nodes1.append(Node(sigmoid, sigmoid_derivative, is_input_node=True))
-    input_layer = Layer(nodes1)
-
-    nodes2 = []
-    for i in range(4):
-        nodes2.append(Node(sigmoid, sigmoid_derivative))
-    hidden_layer = Layer(nodes2)
-
-    nodes3 = []
-    for i in range(2):
-        nodes3.append(Node(sigmoid, sigmoid_derivative))
-    output_layer = Layer(nodes3)
-
-    input_layer.set_next_layer(hidden_layer)
-    hidden_layer.set_next_layer(output_layer)
-
-    layers = []
-    layers.append(input_layer)
-    layers.append(hidden_layer)
-    layers.append(output_layer)
-
-    nn = FullyConnectedNeuralNetwork2(layers, train_data, test_data)
-    nn.train(max_epoch=20000, learning_rate=0.01)
+    nn = construct_network([2, 4, 2], train_data, test_data, sigmoid, sigmoid_derivative)
+    nn.train(max_epoch=30000, learning_rate=0.01)
     print(nn.test())
