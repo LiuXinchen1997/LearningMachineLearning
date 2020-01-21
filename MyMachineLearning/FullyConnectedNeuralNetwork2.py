@@ -249,6 +249,56 @@ class FullyConnectedNeuralNetwork2:
 
         self.__is_trained = False
 
+    def append_layer_nodes(self, layer_id, nodes):
+        if layer_id < 0 or len(nodes) == 0:
+            return
+
+        for node in nodes:
+            self.append_layer_node(layer_id, node)
+
+    def insert_layer(self, pos, num_layer_nodes, activate, activate_derivative):
+        nodes = []
+        for i in range(num_layer_nodes):
+            if pos == 0:
+                nodes.append(Node(activate, activate_derivative, is_input_node=True))
+            else:
+                nodes.append(Node(activate, activate_derivative))
+        layer = Layer(nodes)
+        self.__layers.insert(pos, layer)
+
+        cur_layer = self.__layers[pos]
+        if pos < len(self.__layers - 1):
+            next_layer = cur_layer.get_next_layer()
+            cur_layer.set_omega(np.random.random((len(cur_layer.get_nodes()), len(next_layer.get_nodes()))))
+            cur_layer.set_b(np.random.random(len(next_layer.get_nodes())))
+        if pos > 0:
+            prev_layer = self.__layers[pos - 1]
+            prev_layer.set_omega(np.random.random((len(prev_layer.get_nodes()), len(cur_layer.get_nodes()))))
+            prev_layer.set_b(np.random.random((len(cur_layer.get_nodes()))))
+
+        self.__is_trained = False
+
+    def reconstruct_network_structure(self, num_layers_nodes, activate, activate_derivative):
+        if len(num_layers_nodes) < 2:
+            raise Exception("The number of layers is at least 2.")
+
+        layers = []
+        for i in range(len(num_layers_nodes)):
+            num_layer_nodes = num_layers_nodes[i]
+            nodes = []
+            for _ in range(num_layer_nodes):
+                if i == 0:
+                    nodes.append(Node(activate, activate_derivative, is_input_node=True))
+                else:
+                    nodes.append(Node(activate, activate_derivative))
+            layer = Layer(nodes)
+            layers.append(layer)
+
+        for i in range(len(layers) - 1):
+            layers[i].set_next_layer(layers[i + 1])
+
+        self.__layers = layers
+
 
 def construct_network(num_layers_nodes, train_data, test_data, activate, activate_derivative):
     """
