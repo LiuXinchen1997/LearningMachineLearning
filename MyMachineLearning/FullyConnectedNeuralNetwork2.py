@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 
 from utils.CALC_FUNCTIONS import sigmoid, sigmoid_derivative
 from MyMachineLearning.Dataset import LabeledDatasetFromFile
@@ -76,13 +77,20 @@ class Layer:
     def get_omega(self):
         return self.__omega
 
+    def set_omega(self, omega):
+        self.__omega = omega
+
     def get_b(self):
         return self.__b
+
+    def set_b(self, b):
+        self.__b = b
 
 
 class FullyConnectedNeuralNetwork2:
     def __init__(self, layers, train_data, test_data):
         self.__layers = layers
+        self.__is_trained = False
 
         self.__train_feats = train_data[:, :-1]
         self.__train_labels = train_data[:, -1]
@@ -160,13 +168,18 @@ class FullyConnectedNeuralNetwork2:
             ind -= 1
 
     def train(self, max_epoch=20000, learning_rate=0.01):
-        for i in range(max_epoch):
-            if i % 100 == 0:
-                self.print_parameters()
+        for i in tqdm(range(max_epoch)):
+            #if i % 100 == 0:
+             #   self.print_parameters()
             for (feat, label) in zip(self.__train_feats, self.__train_labels):
                 self.__backward_propagate(feat, label, learning_rate=learning_rate)
 
+        self.__is_trained = True
+
     def test(self):
+        if not self.__is_trained:
+            raise Exception("Network has not been trained.")
+
         correct = 0
         for (feat, label) in zip(self.__test_feats, self.__test_labels):
             correct += (self.pred(feat) == label)
@@ -174,6 +187,9 @@ class FullyConnectedNeuralNetwork2:
         return correct / self.__test_labels.shape[0]
 
     def pred(self, feat):
+        if not self.__is_trained:
+            raise Exception("Network has not been trained.")
+
         self.__forward_propagate(feat)
         nodes = self.__layers[-1].get_nodes()
 
@@ -214,6 +230,25 @@ class FullyConnectedNeuralNetwork2:
                 print(b[i], end=' ')
             print(end='\n')
 
+    # modify network structure
+    def append_layer_node(self, layer_id, node):
+        if layer_id < 0:
+            return
+
+        cur_layer = self.__layers[layer_id]
+        cur_layer.get_nodes().append(node)
+
+        if layer_id > 0:
+            prev_layer = self.__layers[layer_id-1]
+            prev_layer.set_omega(np.random.random((len(prev_layer.get_nodes()), len(cur_layer.get_nodes()))))
+            prev_layer.set_b(np.random.random((len(cur_layer.get_nodes()))))
+        if layer_id < len(self.__layers) - 1:
+            next_layer = cur_layer.get_next_layer()
+            cur_layer.set_omega(np.random.random((len(cur_layer.get_nodes()), len(next_layer.get_nodes()))))
+            cur_layer.set_b(np.random.random((len(next_layer.get_nodes()))))
+
+        self.__is_trained = False
+
 
 def construct_network(num_layers_nodes, train_data, test_data, activate, activate_derivative):
     """
@@ -251,5 +286,10 @@ if __name__ == '__main__':
     test_data = data[100:, :]
 
     nn = construct_network([2, 4, 2], train_data, test_data, sigmoid, sigmoid_derivative)
-    nn.train(max_epoch=30000, learning_rate=0.01)
+    nn.train(max_epoch=3000, learning_rate=0.01)
+    print(nn.test())
+
+    # modify network structure
+    nn.append_layer_node(1, Node(sigmoid, sigmoid_derivative))
+    nn.train(max_epoch=3000, learning_rate=0.01)
     print(nn.test())
