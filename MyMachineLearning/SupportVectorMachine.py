@@ -4,12 +4,12 @@ import time
 from matplotlib import pyplot as plt
 
 from MyMachineLearning.Dataset import LabeledDatasetFromFile, LabeledTrainAndTestDataset
-import utils.CONSTANT
+from MyMachineLearning.utils import CONSTANT
 
 
 #%%
 class SupportVectorMachine:
-    def __init__(self, train_data, test_data, epsilon=utils.CONSTANT.DEFAULT_ZERO_PRECISION,
+    def __init__(self, train_data, test_data, epsilon=CONSTANT.DEFAULT_ZERO_PRECISION,
                  C=200, kernel_option=('rbf', 1.3)):
         """
         :param train_data: numpy.ndarray, shape: nsamples * nfeats

@@ -1,7 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 
-from utils.CALC_FUNCTIONS import sigmoid, sigmoid_derivative
+from MyMachineLearning.utils.CALC_FUNCTIONS import sigmoid, sigmoid_derivative
 from MyMachineLearning.Dataset import LabeledDatasetFromFile
 
 

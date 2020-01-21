@@ -5,10 +5,10 @@ import os
 import turtle
 from matplotlib import pyplot as plt
 
-import utils.CALC_FUNCTIONS
-import utils.CONSTANT
+from MyMachineLearning import utils
+import MyMachineLearning.utils.CONSTANT
 from MyMachineLearning.Dataset import LabeledDatasetFromFile
-from utils import Visualization
+from MyMachineLearning.utils import Visualization
 
 
 class FullyConnectedNeuralNetwork:
@@ -29,17 +29,17 @@ class FullyConnectedNeuralNetwork:
 
         if isinstance(activate, str):
             if 'sigmoid' == activate:
-                self.__activate = utils.CALC_FUNCTIONS.sigmoid
-                self.__activate_derivative = utils.CALC_FUNCTIONS.sigmoid_derivative
+                self.__activate = MyMachineLearning.utils.CALC_FUNCTIONS.sigmoid
+                self.__activate_derivative = MyMachineLearning.utils.CALC_FUNCTIONS.sigmoid_derivative
             elif 'tanh' == activate:
-                self.__activate = utils.CALC_FUNCTIONS.tanh
-                self.__activate_derivative = utils.CALC_FUNCTIONS.tanh_derivative
+                self.__activate = MyMachineLearning.utils.CALC_FUNCTIONS.tanh
+                self.__activate_derivative = MyMachineLearning.utils.CALC_FUNCTIONS.tanh_derivative
             elif 'relu' == activate:
-                self.__activate = utils.CALC_FUNCTIONS.relu
-                self.__activate_derivative = utils.CALC_FUNCTIONS.relu_derivative
+                self.__activate = MyMachineLearning.utils.CALC_FUNCTIONS.relu
+                self.__activate_derivative = MyMachineLearning.utils.CALC_FUNCTIONS.relu_derivative
             elif 'none' == activate:  # no activate functions
-                self.__activate = utils.CALC_FUNCTIONS._none
-                self.__activate_derivative = utils.CALC_FUNCTIONS._none_derivative
+                self.__activate = MyMachineLearning.utils.CALC_FUNCTIONS._none
+                self.__activate_derivative = MyMachineLearning.utils.CALC_FUNCTIONS._none_derivative
             else:
                 raise Exception("wrong activate functions.")
         elif isinstance(self.__activate, types.FunctionType):
@@ -182,7 +182,7 @@ class FullyConnectedNeuralNetwork:
 
             print("epoch {} / {} loss: {}".format(cur_epoch + 1, max_epoch, loss / train_feats_one_epoch.shape[0]))
             self.__history_loss.append(loss)
-            if loss <= utils.CONSTANT.DEFAULT_ZERO_PRECISION:
+            if loss <= MyMachineLearning.utils.CONSTANT.DEFAULT_ZERO_PRECISION:
                 break
 
             # record model parameters during training for visualization

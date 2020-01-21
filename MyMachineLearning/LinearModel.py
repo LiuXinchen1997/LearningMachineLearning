@@ -3,8 +3,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 from MyMachineLearning.Dataset import LabeledDatasetFromFile
 
-import utils.CONSTANT
-
 
 #%%
 # for regression, not for classification
@@ -275,9 +273,9 @@ class LinearDiscriminantAnalysis:
 if __name__ == '__main__':
     data_address = r'..\dataset\watermelon3.xlsx'
     datasetff = LabeledDatasetFromFile(data_address)
-    entire_train_data = datasetff.get_data_by_sheet(0, mode=utils.CONSTANT.TRANS)
+    entire_train_data = datasetff.get_data_by_sheet(0, mode=MyMachineLearning.utils.CONSTANT.TRANS)
     entire_train_data.astype(np.float)
-    selected_train_data = datasetff.get_data_by_sheet(0, mode=utils.CONSTANT.TRANS, feat_indces=[6, 7], label_indces=[8])
+    selected_train_data = datasetff.get_data_by_sheet(0, mode=MyMachineLearning.utils.CONSTANT.TRANS, feat_indces=[6, 7], label_indces=[8])
     selected_train_data.astype(np.float)
 
     # 线性回归

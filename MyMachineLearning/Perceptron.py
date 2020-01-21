@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import turtle
 
-import utils.CONSTANT
-from MyMachineLearning.Dataset import LabeledDatasetFromFile, LabeledTrainAndTestDataset
+from MyMachineLearning.Dataset import LabeledDatasetFromFile
+from MyMachineLearning.utils import CONSTANT
 
 
 # Just for linear separable dataset
@@ -206,7 +206,7 @@ if __name__ == '__main__':
         return 1 if x > 0 else 0
 
     data_address = r'..\dataset\watermelon3.xlsx'
-    datasetff = LabeledDatasetFromFile(data_address).get_data_by_sheet(0, mode=utils.CONSTANT.TRANS)
+    datasetff = LabeledDatasetFromFile(data_address).get_data_by_sheet(0, mode=CONSTANT.TRANS)
     datasetff.astype(np.float)
     train_data = datasetff[:, -3:]  # 只使用连续属性值
     linear_separable_data = train_data[[0, 1, 2, 3, 4, 6, 8, 9, 10, 11, 12, 13, 16], :]

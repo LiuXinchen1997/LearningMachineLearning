@@ -5,8 +5,6 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
 
-import utils.CONSTANT
-
 
 #%%
 class LabeledDatasetFromFile:
@@ -35,7 +33,7 @@ class LabeledDatasetFromFile:
                 for j in range(ncols):
                     data[i, j] = sheet.cell(i, j).value
 
-            if mode == utils.CONSTANT.TRANS:
+            if mode == MyMachineLearning.utils.CONSTANT.TRANS:
                 data = data.transpose()
 
             nsamples = data.shape[0]
