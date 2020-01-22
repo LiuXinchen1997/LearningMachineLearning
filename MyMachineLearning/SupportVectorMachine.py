@@ -36,11 +36,11 @@ class SupportVectorMachine:
     def __calc_kernel_value(feats, feat_x, kernel_option):
         """
         :param kernel_option
-        1. 线性核：('linear')
-        2. 多项式核：('poly', d)
-        3. 高斯核：('rbf', sigma)
-        4. 拉普拉斯核：('laplace', sigma)
-        5. Sigmoid核：('sigmoid', beta, theta)
+        1. linear kernel: ('linear')
+        2. polynomial kernel: ('poly', d)
+        3. gauss kernel: ('rbf', sigma)
+        4. laplace kernel: ('laplace', sigma)
+        5. sigmoid kernel: ('sigmoid', beta, theta)
         """
         nsamples = feats.shape[0]
 
