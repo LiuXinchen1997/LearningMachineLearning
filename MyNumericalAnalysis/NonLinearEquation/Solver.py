@@ -1,6 +1,6 @@
 import numpy as np
 
-from NumericalAnalysis.utils import CONSTANT
+from MyNumericalAnalysis.utils import CONSTANT
 
 
 class SolveNonLinearEquation:

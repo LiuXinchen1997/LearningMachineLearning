@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from NumericalAnalysis.LinearSystemEquation.InstanceSolver import InstanceSolveLinearSystemEquation
+from MyNumericalAnalysis.LinearSystemEquation.InstanceSolver import InstanceSolveLinearSystemEquation
 
 
 # 多项式拟合

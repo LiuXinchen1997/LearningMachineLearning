@@ -1,6 +1,6 @@
 import numpy as np
 import sympy
-from NumericalAnalysis.LinearSystemEquation.InstanceSolver import InstanceSolveLinearSystemEquation
+from MyNumericalAnalysis.LinearSystemEquation.InstanceSolver import InstanceSolveLinearSystemEquation
 
 
 # x \in [-1, 1]
