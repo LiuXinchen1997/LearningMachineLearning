@@ -1,8 +1,10 @@
 import numpy as np
 
+from MyNumericalAnalysis.utils import CONSTANT
+
 
 class Romberg:
-    def __init__(self, f, a, b, epsilon=1e-4):
+    def __init__(self, f, a, b, epsilon=CONSTANT.ITER_PRECISION):
         self.f = f
         if a > b:
             a, b = b, a
@@ -36,7 +38,7 @@ class Romberg:
 if __name__ == '__main__':
     def f(x):
         return (10 / x) ** 2 * np.sin(10 / x)
-    
+
     r = Romberg(f, 1, 3)
     r.calc()
     print('打印T-表得：')

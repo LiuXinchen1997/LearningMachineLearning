@@ -5,6 +5,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
 
+import MyMachineLearning.utils.CONSTANT
 
 #%%
 class LabeledDatasetFromFile:
