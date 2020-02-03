@@ -167,12 +167,18 @@ class FullyConnectedNeuralNetwork2:
 
             ind -= 1
 
+    def train_one_epoch(self, learning_rate):
+        for (feat, label) in zip(self.__train_feats, self.__train_labels):
+            self.__backward_propagate(feat, label, learning_rate=learning_rate)
+
+    def set_is_trained(self):
+        self.__is_trained = True
+
     def train(self, max_epoch=20000, learning_rate=0.01):
         for i in tqdm(range(max_epoch)):
             #if i % 100 == 0:
              #   self.print_parameters()
-            for (feat, label) in zip(self.__train_feats, self.__train_labels):
-                self.__backward_propagate(feat, label, learning_rate=learning_rate)
+            self.train_one_epoch(learning_rate=learning_rate)
 
         self.__is_trained = True
 

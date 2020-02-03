@@ -1,13 +1,57 @@
+"""
+进度条实现思路：
+当前思路：主窗口thread中运行train，设置timer --> 主窗口计时器信号事件响应，定时读取thread中已经更新的cur_epoch --> 主窗口计算进度更新到进度条窗口中
+参考思路：主窗口thread中运行train，thread中每运行x epoches发射信号 --> 主窗口写响应函数，响应信号并接受数据，更新进度条窗口
+"""
+
 import sys, os
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QPainter, QBrush, QPen
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QBasicTimer, QThread, pyqtSignal
 import numpy as np
+from tqdm import tqdm
 
 from MyMachineLearning.Dataset import LabeledDatasetFromFile
 import MyMachineLearning.FullyConnectedNeuralNetwork2 as FCNN
 from MyMachineLearning.utils.CALC_FUNCTIONS import sigmoid, sigmoid_derivative
+
+
+class ProgressBarWindow(QtWidgets.QWidget):
+    def __init__(self):
+        super(ProgressBarWindow, self).__init__()
+
+        self.setWindowTitle("Progress Bar")
+        self.resize(400, 60)
+
+        self.pb = QtWidgets.QProgressBar()
+        self.pb.setValue(0)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.pb)
+        self.setLayout(layout)
+        self.setWindowFlags(Qt.Dialog|Qt.FramelessWindowHint)
+
+    def set_progress(self, val):
+        self.pb.setValue(val)
+
+
+class FCNNThread(QThread):
+    signal = pyqtSignal()
+
+    def __init__(self, fcnn, max_epoch, learning_rate):
+        super(FCNNThread, self).__init__()
+        self.fcnn = fcnn
+        self.max_epoch = max_epoch
+        self.learning_rate = learning_rate
+
+    def run(self):
+        self.cur_epoch = 0
+        for i in tqdm(range(self.max_epoch)):
+            self.fcnn.train_one_epoch(learning_rate=self.learning_rate)
+            self.cur_epoch += 1
+        self.fcnn.set_is_trained()
+        self.signal.emit()
 
 
 class UIFCNNWindow(QtWidgets.QWidget):
@@ -31,7 +75,8 @@ class UIFCNNWindow(QtWidgets.QWidget):
         self.line_width = 3
 
         self.setObjectName("Main Window")
-        self.resize(self.window_width, self.window_height)
+        self.setFixedWidth(self.window_width)
+        self.setFixedHeight(self.window_height)
 
         vertical_layout = QtWidgets.QVBoxLayout()
 
@@ -117,6 +162,9 @@ class UIFCNNWindow(QtWidgets.QWidget):
         self._widgets_state_init_status()
         self._set_connect()
 
+    def timerEvent(self, event):
+        self.progress_window.set_progress(self.fcnn_thread.cur_epoch * 100. / self.max_epoch)
+
     def _widgets_state_init_status(self):
         self.output_nodes_spin_box.setEnabled(False)
         self.layer_pos_spin_box.setEnabled(False)
@@ -160,13 +208,62 @@ class UIFCNNWindow(QtWidgets.QWidget):
         acc = self.fcnn.test()
         self.label7.setText("Prediction Accuracy: " + str(acc))
 
-    def _train_btn_clicked(self):
-        learning_rate = float(self.learning_rate_line_edit.text())
-        max_epoch = int(self.max_epoch_line_edit.text())
-        self.fcnn.train(max_epoch=max_epoch, learning_rate=learning_rate)
+    def train_end_callback(self):
+        self.progress_window.destroy()
+        self._train_end_status()
+
         self.is_trained = True
         self._is_trained_status()
+        # self.fcnn_thread.destroyed()
+
         QtWidgets.QMessageBox.information(None, "Message", "Train completely.", QtWidgets.QMessageBox.Ok)
+
+    def _train_begin_status(self):
+        self.upload_btn.setEnabled(False)
+        self.output_nodes_spin_box.setEnabled(False)
+        self.layer_pos_spin_box.setEnabled(False)
+        self.insert_layer_btn.setEnabled(False)
+        self.remove_layer_btn.setEnabled(False)
+        self.node_pos_spin_box.setEnabled(False)
+        self.insert_node_btn.setEnabled(False)
+        self.remove_node_btn.setEnabled(False)
+        self.ratio_slider.setEnabled(False)
+        self.max_epoch_line_edit.setEnabled(False)
+        self.learning_rate_line_edit.setEnabled(False)
+        self.train_btn.setEnabled(False)
+        self.save_btn.setEnabled(False)
+        self.load_btn.setEnabled(False)
+        self.test_btn.setEnabled(False)
+
+    def _train_end_status(self):
+        self.upload_btn.setEnabled(True)
+        self.output_nodes_spin_box.setEnabled(True)
+        self.layer_pos_spin_box.setEnabled(True)
+        self.insert_layer_btn.setEnabled(True)
+        self.remove_layer_btn.setEnabled(True)
+        self.node_pos_spin_box.setEnabled(True)
+        self.insert_node_btn.setEnabled(True)
+        self.remove_node_btn.setEnabled(True)
+        self.ratio_slider.setEnabled(True)
+        self.learning_rate_line_edit.setEnabled(True)
+        self.max_epoch_line_edit.setEnabled(True)
+        self.train_btn.setEnabled(True)
+        self.save_btn.setEnabled(True)
+        self.load_btn.setEnabled(True)
+        self.test_btn.setEnabled(True)
+
+    def _train_btn_clicked(self):
+        self.learning_rate = float(self.learning_rate_line_edit.text())
+        self.max_epoch = int(self.max_epoch_line_edit.text())
+
+        self._train_begin_status()
+        self.progress_window = ProgressBarWindow()
+        self.progress_window.show()
+        self.fcnn_thread = FCNNThread(self.fcnn, self.max_epoch, self.learning_rate)
+        self.fcnn_thread.start()
+        self.fcnn_thread.signal.connect(self.train_end_callback)
+        self.timer = QBasicTimer()
+        self.timer.start(200, self)
 
     def _save_btn_clicked(self):
         pass
@@ -246,7 +343,8 @@ class UIFCNNWindow(QtWidgets.QWidget):
         self.has_data = True
         data = LabeledDatasetFromFile(self.data_file_path).get_data_by_sheet(0)
         self.raw_data = data
-        self.raw_data[self.raw_data[:, 2] == -1, 2] = 0.
+        self.raw_data[self.raw_data[:, -1] == -1, -1] = 0.  # default for 0/1 binary classification problem
+                                                            # more classes is also ok, e.g. 4 classes is 0,1,2,3
 
         self.output_nodes_spin_box.setEnabled(True)
         self.layer_pos_spin_box.setEnabled(True)
