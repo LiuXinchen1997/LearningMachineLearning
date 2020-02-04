@@ -8,5 +8,5 @@
 
 index|name|finished
 -|-|-
-1| upload settings file|
+1| upload settings file| √
 2| can not destroy thread|

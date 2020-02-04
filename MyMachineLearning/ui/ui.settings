@@ -1,0 +1,7 @@
+window_width 800
+window_height 1000
+operate_height 220
+margin 20
+node_margin 150
+node_radius 20
+line_width 3

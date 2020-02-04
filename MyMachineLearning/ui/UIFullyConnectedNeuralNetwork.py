@@ -73,6 +73,8 @@ class UIFCNNWindow(QtWidgets.QWidget):
         self.node_margin = 150
         self.node_radius = 30
         self.line_width = 3
+        self.attr_names = ['window_width', 'window_height', 'operate_height',
+                           'margin', 'node_margin', 'node_radius', 'line_width']
 
         self.setObjectName("Main Window")
         self.setFixedWidth(self.window_width)
@@ -81,9 +83,11 @@ class UIFCNNWindow(QtWidgets.QWidget):
         vertical_layout = QtWidgets.QVBoxLayout()
 
         layout1 = QtWidgets.QHBoxLayout()
+        self.settings_btn = QtWidgets.QPushButton("Upload Settings")
         self.upload_btn = QtWidgets.QPushButton("Upload Data")
         self.label = QtWidgets.QLabel("Number of output nodes: ")
         self.output_nodes_spin_box = QtWidgets.QSpinBox()
+        layout1.addWidget(self.settings_btn)
         layout1.addWidget(self.upload_btn)
         layout1.addWidget(self.label)
         layout1.addWidget(self.output_nodes_spin_box)
@@ -189,6 +193,7 @@ class UIFCNNWindow(QtWidgets.QWidget):
         self.learning_rate_line_edit.setText("0.01")
 
     def _set_connect(self):
+        self.settings_btn.clicked.connect(self._settings_btn_clicked)
         self.upload_btn.clicked.connect(self._upload_btn_clicked)
         self.output_nodes_spin_box.valueChanged.connect(self._output_nodes_spin_box_value_changed)
 
@@ -204,6 +209,38 @@ class UIFCNNWindow(QtWidgets.QWidget):
 
         self.test_btn.clicked.connect(self._test_btn_clicked)
 
+    def _settings_btn_clicked(self):
+        settings_path, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Input the Settings File', './',
+                                                           'Settings Files(*.settings)')
+        if settings_path is None or settings_path == '':
+            return
+        if settings_path[-8:] != 'settings':
+            return
+
+        settings = self._lead_in_settings(settings_path)
+        for attr_name in self.attr_names:
+            if settings.get(attr_name) is None:
+                continue
+            self.__setattr__(attr_name, settings[attr_name])
+
+        self.setFixedHeight(self.window_height)
+        self.setFixedWidth(self.window_width)
+        self.update()
+
+        QtWidgets.QMessageBox.information(None, "Message", "Lead in settings completely.", QtWidgets.QMessageBox.Ok)
+
+    @staticmethod
+    def _lead_in_settings(settings_path):
+        settings = dict()
+        with open(settings_path) as f:
+            lines = f.readlines()
+            for line in lines:
+                attr_name = str(line.split(' ')[0])
+                attr_val = int(line.split(' ')[1])
+                settings[attr_name] = attr_val
+
+        return settings
+
     def _test_btn_clicked(self):
         acc = self.fcnn.test()
         self.label7.setText("Prediction Accuracy: " + str(acc))
@@ -214,11 +251,14 @@ class UIFCNNWindow(QtWidgets.QWidget):
 
         self.is_trained = True
         self._is_trained_status()
+        if self.timer.isActive():
+            self.timer.stop()
         # self.fcnn_thread.destroyed()
 
         QtWidgets.QMessageBox.information(None, "Message", "Train completely.", QtWidgets.QMessageBox.Ok)
 
     def _train_begin_status(self):
+        self.settings_btn.setEnabled(False)
         self.upload_btn.setEnabled(False)
         self.output_nodes_spin_box.setEnabled(False)
         self.layer_pos_spin_box.setEnabled(False)
@@ -236,6 +276,7 @@ class UIFCNNWindow(QtWidgets.QWidget):
         self.test_btn.setEnabled(False)
 
     def _train_end_status(self):
+        self.settings_btn.setEnabled(True)
         self.upload_btn.setEnabled(True)
         self.output_nodes_spin_box.setEnabled(True)
         self.layer_pos_spin_box.setEnabled(True)
@@ -327,7 +368,7 @@ class UIFCNNWindow(QtWidgets.QWidget):
             self.structure = [self.raw_data.shape[1]-1, 2]
             self.update()
             self._change_structure()
-            #QtWidgets.QMessageBox.information(None, "Message", "Input the data file done.", QtWidgets.QMessageBox.Ok)
+            # QtWidgets.QMessageBox.information(None, "Message", "Input the data file done.", QtWidgets.QMessageBox.Ok)
 
     def _output_nodes_spin_box_value_changed(self, val):
         if len(self.structure) == 0:
