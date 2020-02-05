@@ -4,8 +4,8 @@
 参考思路：主窗口thread中运行train，thread中每运行x epoches发射信号 --> 主窗口写响应函数，响应信号并接受数据，更新进度条窗口
 """
 
-import sys, os
-from PyQt5 import QtCore, QtWidgets
+import sys
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QPainter, QBrush, QPen
 from PyQt5.QtCore import Qt, QBasicTimer, QThread, pyqtSignal
@@ -13,7 +13,7 @@ import numpy as np
 from tqdm import tqdm
 
 from MyMachineLearning.Dataset import LabeledDatasetFromFile
-import MyMachineLearning.FullyConnectedNeuralNetwork2 as FCNN
+import MyMachineLearning.NeuralNetwork.FullyConnectedNeuralNetwork2 as FCNN
 from MyMachineLearning.utils.CALC_FUNCTIONS import sigmoid, sigmoid_derivative
 
 
@@ -68,15 +68,15 @@ class UIFCNNWindow(QtWidgets.QWidget):
         # hyper-parameters
         self.window_width = 800
         self.window_height = 1000
-        self.operate_height = 220
+        self.operate_height = 300
         self.margin = 20
-        self.node_margin = 150
+        self.node_margin = 100
         self.node_radius = 30
         self.line_width = 3
         self.attr_names = ['window_width', 'window_height', 'operate_height',
                            'margin', 'node_margin', 'node_radius', 'line_width']
 
-        self.setObjectName("Main Window")
+        self.setWindowTitle("Fully Connected Neural Network Visual Platform")
         self.setFixedWidth(self.window_width)
         self.setFixedHeight(self.window_height)
 
@@ -413,10 +413,15 @@ class UIFCNNWindow(QtWidgets.QWidget):
         print(str(int(s.x())) + ':' + str(int(s.y())))
 
     def paintEvent(self, event):
+        painter = QPainter()
+        painter.begin(self)
+        painter.setPen(QPen(Qt.gray))
+        painter.drawRect(self.node_margin * 0.3, self.operate_height + self.node_margin * 0.3,
+                         self.window_width - self.node_margin * 0.6, self.window_height - self.operate_height - self.node_margin * 0.6)
+        painter.end()
+
         if len(self.structure) == 0:
             return
-
-        painter = QPainter()
 
         width_step = (self.window_width - 2 * self.node_margin) / (len(self.structure) - 1)
         width_cur = self.node_margin

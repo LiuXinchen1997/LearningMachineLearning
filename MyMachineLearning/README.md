@@ -76,4 +76,4 @@ index|name|finished
 7| visualize network architecture with turtle| √
 8| save and load parameter interface| √
 9| implement NN with OO style| √
-10| visualization with Qt| 
+10| visualization with Qt| √
