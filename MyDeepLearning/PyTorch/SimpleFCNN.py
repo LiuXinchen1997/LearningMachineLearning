@@ -8,48 +8,25 @@ from MyMachineLearning.Dataset import LabeledDatasetFromFile
 
 
 class Net(torch.nn.Module):
-    """
-    # Why not work???
     def __init__(self, structure):
         super(Net, self).__init__()
         self.structure = structure
 
         nlayers = len(structure)
-        if nlayers < 2:
-            return
-
-        self.hiddens = []
         for i in range(nlayers):
             if 0 == i:
                 continue
             elif nlayers - 1 == i:
                 self.out = torch.nn.Linear(structure[i-1], structure[i])
             else:
-                self.hiddens.append(torch.nn.Linear(structure[i-1], structure[i]))
-        print(self.hiddens)
+                self.__setattr__("hidden"+str(i), torch.nn.Linear(structure[i-1], structure[i]))
 
     def forward(self, x):
+        nlayers = len(self.structure)
+
         x = x.float()
-        for hidden in self.hiddens:
-            x = F.relu(hidden(x))
-        x = self.out(x)
-        return x
-    """
-
-    def __init__(self, structure):
-        super(Net, self).__init__()
-        self.structure = structure
-
-        nlayers = len(structure)
-        if nlayers != 3:  # Now only support 3 layers(input layer --> 1 hidden layer --> output layer)
-            return
-
-        self.hidden = torch.nn.Linear(structure[0], structure[1])
-        self.out = torch.nn.Linear(structure[1], structure[2])
-
-    def forward(self, x):
-        x = x.float()
-        x = F.relu(self.hidden(x))
+        for i in range(1, nlayers-1):
+            x = F.relu(self.__getattr__("hidden"+str(i))(x))
         x = self.out(x)
         return x
 
@@ -115,6 +92,6 @@ if __name__ == '__main__':
     test_data = torch.from_numpy(train_data[150:, :])
     train_data = torch.from_numpy(train_data[:150, :])
 
-    fcnn = SimpleFCNN([2, 5, 2], train_data, test_data)
+    fcnn = SimpleFCNN([2, 7, 5, 2], train_data, test_data)
     fcnn.train(max_epoch=20000)
     print(fcnn.test())

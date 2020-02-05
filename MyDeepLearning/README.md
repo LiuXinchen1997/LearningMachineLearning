@@ -10,6 +10,6 @@
 
 index|name|finished
 -|-|-
-1| only 1 hidden layer works|
+1| only 1 hidden layer works| √
 
 #### 2 TensorFlow
