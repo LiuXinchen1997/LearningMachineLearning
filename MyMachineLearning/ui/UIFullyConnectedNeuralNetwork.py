@@ -15,6 +15,7 @@ from tqdm import tqdm
 from MyMachineLearning.Dataset import LabeledDatasetFromFile
 import MyMachineLearning.NeuralNetwork.FullyConnectedNeuralNetwork2 as FCNN
 from MyMachineLearning.utils.CALC_FUNCTIONS import sigmoid, sigmoid_derivative
+from MyDeepLearning.PyTorch import SimpleFCNN
 
 
 class ProgressBarWindow(QtWidgets.QWidget):

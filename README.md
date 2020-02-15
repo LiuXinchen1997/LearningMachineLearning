@@ -69,6 +69,7 @@ index|name|finished
 8| save and load parameter interface| √
 9| implement NN with OO style| √
 10| visualization with Qt| √
+11| ui with pytorch| 
 
 
 ### 3 Numerical Analysis
