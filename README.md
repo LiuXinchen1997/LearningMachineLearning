@@ -1,3 +1,5 @@
+[TOC]
+
 # LearningMachineLearning
 
 > Coding for machine learning practice!
@@ -13,6 +15,7 @@
 index|name|finished
 -|-|-
 1| only 1 hidden layer works| √
+2| dynamic network structure | 
 
 #### 1.2 TensorFlow
 
@@ -21,14 +24,14 @@ index|name|finished
 
 [MyMachineLearning](./MyMachineLearning)
 
-### 2.0 General
+#### 2.0 General
 
 index|name|finished
 -|-|-
 1| optimize dataset interface | √
 2| use python package pandas |
 
-### 2.1 Linear Model
+#### 2.1 Linear Model
 
 index|name|finished
 -|-|-
@@ -37,7 +40,7 @@ index|name|finished
 3| Linear Discriminant Analysis| √
 4| Kernel LDA| 
 
-### 2.2 Decision Tree
+#### 2.2 Decision Tree
 
 index|name|finished
 -|-|-
@@ -46,7 +49,7 @@ index|name|finished
 3| process blank / missing value |
 4| visualize decision tree |
 
-### 2.3 Support Vector Machine
+#### 2.3 Support Vector Machine
 
 index|name|finished
 -|-|-
@@ -55,7 +58,7 @@ index|name|finished
 3| visualize data | √
 4| case of eta >= 0 |
 
-### 2.4 Neural Network
+#### 2.4 Neural Network
 
 index|name|finished
 -|-|-
@@ -69,7 +72,8 @@ index|name|finished
 8| save and load parameter interface| √
 9| implement NN with OO style| √
 10| visualization with Qt| √
-11| ui with pytorch| 
+11| dynamic node management (correctness) | 
+12| ui with pytorch| 
 
 
 ### 3 Numerical Analysis
